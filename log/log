@@ -1,0 +1,3 @@
+Wed, 19 Apr 2017 16:10:37 routes.py[line:42] INFO Path / add Handler <class 'app.view.MyView'>
+Wed, 19 Apr 2017 16:10:37 routes.py[line:42] INFO Path /jsonSchema add Handler <class 'app.jsonSchema.JsonSchema'>
+Wed, 19 Apr 2017 16:10:37 selector_events.py[line:53] DEBUG Using selector: EpollSelector
