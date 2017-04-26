@@ -1,3 +1,6 @@
-Wed, 19 Apr 2017 16:10:37 routes.py[line:42] INFO Path / add Handler <class 'app.view.MyView'>
-Wed, 19 Apr 2017 16:10:37 routes.py[line:42] INFO Path /jsonSchema add Handler <class 'app.jsonSchema.JsonSchema'>
-Wed, 19 Apr 2017 16:10:37 selector_events.py[line:53] DEBUG Using selector: EpollSelector
+Thu, 27 Apr 2017 00:18:20 selector_events.py[line:53] DEBUG Using selector: EpollSelector
+Thu, 27 Apr 2017 00:18:20 routes.py[line:43] INFO Path /jsonSchema add Handler <class 'app.jsonSchema.JsonSchema'>
+Thu, 27 Apr 2017 00:18:20 routes.py[line:43] INFO Path / add Handler <class 'app.view.MyView'>
+Thu, 27 Apr 2017 00:18:20 routes.py[line:43] INFO Path /Museum/Nicholson add Handler <class 'app.Museumschedule.Nicholson.Nicholson'>
+Thu, 27 Apr 2017 00:18:23 Nicholson.py[line:43] INFO http://whatson.sydney.edu.au/configuration/calendar/calendar-view2?SQ_CALENDAR_DATE=2017-04-28&SQ_CALENDAR_VIEW=day
+Thu, 27 Apr 2017 00:18:25 helpers.py[line:417] INFO 127.0.0.1 - - [26/Apr/2017:16:18:25 +0000] "GET /Museum/Nicholson?date=2017-04-28 HTTP/1.1" 200 3893 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.81 Safari/537.36"

@@ -22,7 +22,8 @@ def import_all():
                         for each_dir in dir(lib):
                             if "__" not in each_dir:
                                 element = getattr(lib, each_dir)
-                                if issubclass(element, View) and id(element) != id(View):
+                                if not isinstance(element, dict) and not isinstance(element, str) and \
+                                        issubclass(element, View) and id(element) != id(View):
                                     global_register_handler.append(element)
             else:
                 module_path = ".".join((app.__name__, directory.split(".")[0]))
