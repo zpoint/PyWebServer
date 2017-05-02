@@ -72,7 +72,7 @@ class ESProxy(View):
         responses = await asyncio.gather(*tasks)
         for index_and_doc, response in zip(self.ret_index_and_doc, responses):
             result_dict[",".join(index_and_doc)] = response
-        return web.Response(body=json.dumps(result_dict), headers=Headers.json_headers)
+        return json.dumps(result_dict)
 
     async def get_tasks_and_fetch(self):
         global handling, prev_result, prev_datetime
@@ -81,13 +81,13 @@ class ESProxy(View):
         prev_result = await self.get_and_wait_all_tasks(urls, headers)
         prev_datetime = datetime.datetime.now()
         handling = False
-        return prev_result
+        return web.Response(body=prev_result, headers=Headers.json_headers)
 
     async def wait_for_handling(self):
         global handling, prev_result
         while handling:
             await asyncio.sleep(0.5)
-        return prev_result
+        return web.Response(body=prev_result, headers=Headers.json_headers)
 
     async def do_get(self):
         global prev_result, prev_datetime, handling
@@ -101,8 +101,12 @@ class ESProxy(View):
                 return await self.wait_for_handling()
             else:
                 return await self.get_tasks_and_fetch()
+        else:
+            return web.Response(body=prev_result, headers=Headers.json_headers)
 
     async def get(self):
         check_fail = self.pre_check_param()
         if check_fail:
             return check_fail
+
+        return await self.do_get()
