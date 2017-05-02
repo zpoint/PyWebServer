@@ -2,10 +2,14 @@ import json
 import hashlib
 import logging
 import asyncio
+import datetime
 from aiohttp import web
 from aiohttp.web import View
 from ConfigureUtil import Headers, JsonError, global_session
 
+prev_result = None
+prev_datetime = None
+handling = False
 
 class ESProxy(View):
     path = "/ESProxy"
@@ -70,10 +74,35 @@ class ESProxy(View):
             result_dict[",".join(index_and_doc)] = response
         return web.Response(body=json.dumps(result_dict), headers=Headers.json_headers)
 
+    async def get_tasks_and_fetch(self):
+        global handling, prev_result, prev_datetime
+        handling = True
+        urls, headers = self.get_url_and_headers()
+        prev_result = await self.get_and_wait_all_tasks(urls, headers)
+        prev_datetime = datetime.datetime.now()
+        handling = False
+        return prev_result
+
+    async def wait_for_handling(self):
+        global handling, prev_result
+        while handling:
+            await asyncio.sleep(0.5)
+        return prev_result
+
+    async def do_get(self):
+        global prev_result, prev_datetime, handling
+        if not prev_datetime:
+            prev_datetime = datetime.datetime.now()
+            return await self.get_tasks_and_fetch()
+
+        date_now = datetime.datetime.now()
+        if (date_now - prev_datetime).days > 1:
+            if handling:
+                return await self.wait_for_handling()
+            else:
+                return await self.get_tasks_and_fetch()
+
     async def get(self):
         check_fail = self.pre_check_param()
         if check_fail:
             return check_fail
-
-        urls, headers = self.get_url_and_headers()
-        return await self.get_and_wait_all_tasks(urls, headers)
