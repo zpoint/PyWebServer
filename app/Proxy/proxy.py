@@ -11,6 +11,7 @@ prev_result = None
 prev_datetime = None
 handling = False
 
+
 class ESProxy(View):
     path = "/ESProxy"
 
@@ -102,7 +103,8 @@ class ESProxy(View):
             else:
                 return await self.get_tasks_and_fetch()
         else:
-            return web.Response(body=prev_result, headers=Headers.json_headers)
+            return await self.get_tasks_and_fetch()
+            # return web.Response(body=prev_result, headers=Headers.json_headers)
 
     async def get(self):
         check_fail = self.pre_check_param()
