@@ -37,4 +37,3 @@ def init_log(log_dir):
     rootLogger = logging.getLogger()
     rootLogger.addHandler(h1)
 
-

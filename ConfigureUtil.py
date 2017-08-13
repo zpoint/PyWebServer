@@ -19,6 +19,11 @@ class Headers:
         "charset": "utf-8"
     }
 
+    html_headers = {
+        "Content-Type": "text/html",
+        "charset": "utf-8"
+    }
+
 
 class JsonError:
     param_error = {
