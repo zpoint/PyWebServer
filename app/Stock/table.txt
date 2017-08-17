@@ -1,0 +1,18 @@
+create database stock;
+
+create table user_info(
+   userid INT NOT NULL AUTO_INCREMENT,
+   username VARCHAR(100) NOT NULL,
+   passowrd VARCHAR(40) NOT NULL,
+   bind_username VARCHAR(100) NOT NULL,
+   bind_password VARCHAR(40) NOT NULL,
+   last_active_date DATE,
+   ip VARCHAR(1000) NOT NULL,
+   rest_day INT NOT NULL,
+   cookie VARCHAR(1000) NOT NULL,
+   previous_page VARCHAR(1000) NOT NULL,
+   perfer_host VARCHAR(100) NOT NULL,
+   invite_code VARCHAR(100) NOT NULL,
+   PRIMARY KEY ( userid )
+);
+

@@ -71,7 +71,7 @@ class Nicholson(View):
             else:
                 step = 0
         if not self.item_list:
-            return web.Response(body=JsonError.json_param_error,
+            return web.Response(body=json.dumps(JsonError.param_error),
                                 headers=Headers.json_headers)
         else:
             return web.Response(body=json.dumps(self.item_list),
@@ -80,7 +80,7 @@ class Nicholson(View):
     async def get(self):
         query = self.request.query
         if "date" not in query:
-            return web.Response(body=JsonError.param_error,
+            return web.Response(body=json.dumps(JsonError.param_error),
                                 headers=Headers.json_headers)
         else:
             return await self.get_schedule()

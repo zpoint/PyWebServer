@@ -3,4 +3,4 @@ from routes import setup_routes
 
 app = web.Application()
 setup_routes(app)
-web.run_app(app, port=80)
+web.run_app(app, port=8888)

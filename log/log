@@ -1,0 +1,11 @@
+Thu, 17 Aug 2017 23:33:46 selector_events.py[line:53] DEBUG Using selector: EpollSelector
+Thu, 17 Aug 2017 23:33:46 routes.py[line:44] INFO Path /jsonSchema add Handler <class 'app.jsonSchema.JsonSchema'>
+Thu, 17 Aug 2017 23:33:46 routes.py[line:44] INFO Path / add Handler <class 'app.view.MyView'>
+Thu, 17 Aug 2017 23:33:46 routes.py[line:44] INFO Path /Stock/StockBind add Handler <class 'app.Stock.StockBind.StockBind'>
+Thu, 17 Aug 2017 23:33:46 routes.py[line:44] INFO Path /Stock/StockLogin add Handler <class 'app.Stock.StockLogin.StockLogin'>
+Thu, 17 Aug 2017 23:33:46 routes.py[line:44] INFO Path /Stock add Handler <class 'app.Stock.StockMain.StockSystemLogin'>
+Thu, 17 Aug 2017 23:33:46 routes.py[line:44] INFO Path /Stock/StockRegister add Handler <class 'app.Stock.StockRegister.StockBind'>
+Thu, 17 Aug 2017 23:33:46 routes.py[line:44] INFO Path /Stock/StockLogin add Handler <class 'app.Stock.StockLogin.StockLogin'>
+Thu, 17 Aug 2017 23:33:46 routes.py[line:44] INFO Path /Stock/StockLogin add Handler <class 'app.Stock.StockLogin.StockLogin'>
+Thu, 17 Aug 2017 23:33:46 routes.py[line:44] INFO Path /Stock/VerifyCode add Handler <class 'app.Stock.verifyCode.StockLogin'>
+Thu, 17 Aug 2017 23:33:46 routes.py[line:44] INFO Path /Museum/Nicholson add Handler <class 'app.Museumschedule.Nicholson.Nicholson'>
