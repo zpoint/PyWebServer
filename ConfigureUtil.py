@@ -67,16 +67,46 @@ class ErrorReturn(object):
         </html>""" % (title, h1, body, back_to_path), headers=Headers.html_headers if not headers else headers)
 
     @staticmethod
-    def invalid(title="非法访问"):
-        return web.Response(text="""
-        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-        <html>
-        <head>
-        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-        </head>
-        <title>%s</title>
-        <h1 align="center">%s</h1>
-        """ % (title, title), headers=Headers.html_headers)
+    def invalid(title="非法访问", to_main=True, main_path="/Stock"):
+        if to_main:
+            return web.Response(text="""
+            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+            <html>
+            <head>
+            <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+            </head>
+            <title>%s</title>
+            <h1 align="center">%s</h1>
+            <p align="center">
+            <span id="time">3</span> 秒后跳转</a></p>
+            <script type="text/javascript">  
+            delayURL();    
+            function delayURL() { 
+            var delay = document.getElementById("time").innerHTML;
+                    var t = setTimeout("delayURL()", 1000);
+                if (delay > 0) {
+                    delay--;
+                    document.getElementById("time").innerHTML = delay;
+                } else {
+                    clearTimeout(t); 
+                    window.location.href = "%s";
+                }        
+                } 
+                </script>
+            </p>
+            </html>
+            """ % (title, title, main_path), headers=Headers.html_headers)
+        else:
+            return web.Response(text="""
+            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+            <html>
+            <head>
+            <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+            </head>
+            <title>%s</title>
+            <h1 align="center">%s</h1>
+            """ % (title, title), headers=Headers.html_headers)
+
 
 
 class WebPageBase(object):

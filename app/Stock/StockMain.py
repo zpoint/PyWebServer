@@ -5,7 +5,10 @@ from urllib.parse import urlencode
 
 from ConfigureUtil import global_session, Headers, ErrorReturn
 from app.Stock import Config
+from app.Stock.Config import config
 from app.Stock.DataBase import DBUtil
+from app.Stock.StockRegister import StockBind
+from app.Stock.StockLogin import StockLogin
 
 async def get_code_info():
     url = Config.Host + "/getCodeInfo/.auth?" + urlencode({
@@ -33,6 +36,11 @@ class StockSystemLogin(View):
     path = "/Stock"
 
     async def get(self):
+        if DBUtil.valid_user(self.request.cookies):
+            return web.Response(text="""<head><meta http-equiv="refresh" content="0;url=%s"></head>""" %
+                                     (StockLogin.path, ),
+                                headers=Headers.html_headers)
+
         return web.Response(text="""
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
     <html>
@@ -51,12 +59,12 @@ class StockSystemLogin(View):
         <td><input type="password" name="password" pattern="^[\da-zA-Z]{6,18}$" title="请输入注册时的密码, 必须6-18位的字母数字" /></td>
         </tr></table>
         <table border=0 align="center">
-        <tr align="center"><td><a href="Stock/StockRegister">新用户?点我注册</a></tr>
+        <tr align="center"><td><a href="%s">新用户?点我注册</a></td></tr>
         <tr align="center"><td><input type="submit" align="center" value="登陆" /></td></tr>
         </table>
         </form>
     </html>
-    """ % (self.path, ), headers=Headers.html_headers)
+    """ % (self.path, StockBind.path), headers=Headers.html_headers)
 
     async def post(self):
         text = await self.request.text()
@@ -71,10 +79,13 @@ class StockSystemLogin(View):
         if "username" not in post_body or "password" not in post_body:
             return ErrorReturn.html("非法访问", self.path)
 
-        valid, cookie = DBUtil.get_and_reset_cookie(post_body["username"], post_body["password"])
+        extra_info = self.request.transport.get_extra_info('peername')
+        ip = extra_info[0] if extra_info is not None else str(None)
+
+        valid, cookie = DBUtil.get_and_reset_cookie(post_body["username"], post_body["password"], ip)
         if not valid:
             return ErrorReturn.html(cookie, self.path)
 
         init_headers = Headers.html_headers
-        init_headers["Set-Cookie"] = "UID=" + cookie
+        init_headers["Set-Cookie"] = "StockID=" + cookie + ";path=/;max-age=" + config["common"]["cookie_max_age"]
         return ErrorReturn.html("登陆成功, 即将跳转进入", "/Stock/StockLogin", "登陆成功", headers=init_headers)\

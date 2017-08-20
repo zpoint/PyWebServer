@@ -7,7 +7,7 @@ from app.Stock.DataBase import DBUtil
 from ConfigureUtil import Headers, ErrorReturn
 
 
-class StockLogin(View):
+class StockVerifyCode(View):
     path = "/Stock/VerifyCode"
     async def get(self):
         if not DBUtil.valid_user(self.request.headers["Cookie"]):

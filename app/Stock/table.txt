@@ -3,16 +3,22 @@ create database stock;
 create table user_info(
    userid INT NOT NULL AUTO_INCREMENT,
    username VARCHAR(100) NOT NULL,
-   passowrd VARCHAR(40) NOT NULL,
-   bind_username VARCHAR(100) NOT NULL,
-   bind_password VARCHAR(40) NOT NULL,
-   last_active_date DATE,
-   ip VARCHAR(1000) NOT NULL,
-   rest_day INT NOT NULL,
-   cookie VARCHAR(1000) NOT NULL,
-   previous_page VARCHAR(1000) NOT NULL,
-   perfer_host VARCHAR(100) NOT NULL,
-   invite_code VARCHAR(100) NOT NULL,
-   PRIMARY KEY ( userid )
+   password VARCHAR(40) NOT NULL,
+   bind_username VARCHAR(100),
+   bind_password VARCHAR(40),
+   bind_cookie VARCHAR(1000),
+   bind_param VARCHAR(1000),
+   cookie VARCHAR(1000),
+   last_active_time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   ip VARCHAR(1000),
+   expired timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   previous_page VARCHAR(1000),
+   prefer_host VARCHAR(100),
+   invite_code VARCHAR(100),
+   inviting_code VARCHAR(100),
+   PRIMARY KEY ( userid ),
+   UNIQUE (username),
+   UNIQUE (bind_password)
 );
 
+SELECT userid, username, password, bind_username, bind_password, last_active_time, ip, expired, previous_page, prefer_host, invite_code, inviting_code from user_info;

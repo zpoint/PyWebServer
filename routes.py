@@ -22,10 +22,11 @@ def import_all():
                         for each_dir in dir(lib):
                             if "__" not in each_dir:
                                 element = getattr(lib, each_dir)
-                                if not isinstance(element, dict) and not isinstance(element, str) and \
-                                        getattr(element, "__hash__") is not None and issubclass(element, View) and \
+                                if element is not None and not isinstance(element, (int, dict, str, bool)) \
+                                        and getattr(element, "__hash__") is not None and issubclass(element, View) and \
                                         id(element) != id(View):
-                                    global_register_handler.append(element)
+                                    if element not in global_register_handler:
+                                        global_register_handler.append(element)
             else:
                 module_path = ".".join((app.__name__, directory.split(".")[0]))
                 lib = importlib.import_module(module_path)

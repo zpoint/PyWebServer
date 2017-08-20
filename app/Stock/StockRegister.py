@@ -4,16 +4,13 @@ from aiohttp.web import View
 from urllib.parse import urlencode
 
 from app.Stock.DataBase import DBUtil
-from app.Stock.StockLogin import StockLogin
 from ConfigureUtil import Headers, WebPageBase, ErrorReturn
+main_pth = "/Stock"
 
 
 class StockBind(View):
     path = "/Stock/StockRegister"
     async def get(self):
-        if not DBUtil.valid_user(self.request.headers["Cookie"]):
-            return ErrorReturn.invalid()
-
         html = WebPageBase.head("请注册账号")
         html += """
         <form action="%s" method="post">
@@ -31,18 +28,16 @@ class StockBind(View):
         <td><input type="text" name="inviteCode" pattern="^[\da-zA-Z]{1,}$" title="请输入邀请码" /></td>
         </table>
         <table border=0 align="center">
+        <td><a href="%s">老用户，点我登录</a></td>
         <td><input type="submit" align="center" value="注册" /></td>
         </tr></table>
         </form>
         </body>
         </html>
-        """ % (self.path, )
+        """ % (self.path, main_pth)
         return web.Response(text=html, headers=Headers.html_headers)
 
     async def post(self):
-        if not DBUtil.valid_user(self.request.headers["Cookie"]):
-            return ErrorReturn.invalid()
-
         text = await self.request.text()
         values = text.split("&")
         post_body = dict()
@@ -57,8 +52,11 @@ class StockBind(View):
             if key not in post_body:
                 return ErrorReturn.invalid()
 
-        success, msg = DBUtil.create_user(post_body["username"], post_body["password"], post_body["inviteCode"])
+        extra_info = self.request.transport.get_extra_info('peername')
+        ip = extra_info[0] if extra_info is not None else str(None)
+
+        success, msg = DBUtil.create_user(post_body["username"], post_body["password"], post_body["inviteCode"], ip)
         if not success:
             return ErrorReturn.html(msg, self.path)
         else:
-            return ErrorReturn.html(msg, StockLogin.path)
+            return ErrorReturn.html(msg, main_pth)
