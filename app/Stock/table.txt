@@ -16,6 +16,7 @@ create table user_info(
    prefer_host VARCHAR(100),
    invite_code VARCHAR(100),
    inviting_code VARCHAR(100),
+   rules BIGINT DEFAULT 0,
    PRIMARY KEY ( userid ),
    UNIQUE (username),
    UNIQUE (bind_password)

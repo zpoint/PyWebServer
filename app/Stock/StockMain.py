@@ -1,35 +1,11 @@
-import random
 from aiohttp import web
 from aiohttp.web import View
-from urllib.parse import urlencode
 
-from ConfigureUtil import global_session, Headers, ErrorReturn
-from app.Stock import Config
+from ConfigureUtil import Headers, ErrorReturn
 from app.Stock.Config import config
 from app.Stock.DataBase import DBUtil
 from app.Stock.StockRegister import StockBind
 from app.Stock.StockLogin import StockLogin
-
-async def get_code_info():
-    url = Config.Host + "/getCodeInfo/.auth?" + urlencode({
-        "u": str(random.random()),
-        "systemversion": Config.systemVersion,
-        ".auth": ""
-    })
-    async with global_session.get(url, basic_headers=basic_headers) as resp:
-        text = await resp.text()
-        c_user, verify_value, _ = text.split("_")
-    return c_user, verify_value
-
-async def get_verify_code(c_user):
-    url = Config.Host + "/getVcode/.auth?" + urlencode({
-        "t": c_user,
-        "systemversion": Config.systemVersion,
-        ".auth": ""
-    })
-    async with global_session.get(url, headers=basic_headers) as resp:
-        byte_img = await resp.read()
-        return byte_img
 
 
 class StockSystemLogin(View):

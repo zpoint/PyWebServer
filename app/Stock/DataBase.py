@@ -55,10 +55,6 @@ class DBUtil(object):
                 return DBUtil.get_and_reset_cookie(username, password, ip, retry)
 
     @staticmethod
-    def get_usr_info(cookie):
-        return False
-
-    @staticmethod
     def valid_user(cookie, return_key=None):
         if "StockID" not in cookie:
             return False

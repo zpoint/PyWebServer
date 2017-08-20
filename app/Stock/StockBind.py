@@ -5,6 +5,7 @@ from urllib.parse import quote
 
 from app.Stock.DataBase import DBUtil
 from app.Stock.StockLogin import StockLogin, login
+from app.Stock.StockMonitor import StockMonitor
 from ConfigureUtil import Headers, WebPageBase, ErrorReturn
 
 
@@ -73,3 +74,4 @@ class StockBind(View):
         else:
             DBUtil.update_param(r, {}, cookie_dict, False)
             DBUtil.bind(r, post_body)
+            return ErrorReturn.html("绑定成功", StockMonitor.path, "成功")
