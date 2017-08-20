@@ -1,5 +1,5 @@
 aiohttp>=2.0.7
 async-timeout>=1.2.0
 beautifulsoup4>=4.5.3
-mysql_client
+mysqlclient
 lxml

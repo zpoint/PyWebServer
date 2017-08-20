@@ -18,6 +18,22 @@ class StockMonitor(View):
         </table>
         """ % (r["username"], r["bind_username"], "线路", r["expired"].strftime("%Y-%m-%d"), r["inviting_code"].upper())
 
+    @staticmethod
+    def get_recent_table(r):
+        pass
+
+    @staticmethod
+    def functional_menu(r):
+        pass
+
+    @staticmethod
+    def rule_tables(r):
+        string = '<label><input name="Fruit" type="checkbox" value="" />苹果 </label> '
+
+    @staticmethod
+    def get_line_info(r):
+        pass
+
     async def get(self):
         r = DBUtil.valid_user(self.request.cookies, True)
         if not r:
@@ -27,5 +43,9 @@ class StockMonitor(View):
 
         html = WebPageBase.head("监控系统")
         html += self.personal_head(r)
+        html += """
+            <form action="" method="post"> 
+            """
+        html += "</form>"
         html += "</body></html>"
         return web.Response(text=html, headers=Headers.html_headers)

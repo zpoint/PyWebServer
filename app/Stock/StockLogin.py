@@ -79,7 +79,7 @@ async def login(host, verify_code, verify_value, username, password, cid, cname,
         html = await resp.text()
 
         if "AC" not in resp.cookies:
-            return False, html
+            return False, html if "Server Error" not in html else "对方服务器异常, 请稍后重试"
 
         real_login_host = re.search("http://.+", html)
         if not real_login_host:
