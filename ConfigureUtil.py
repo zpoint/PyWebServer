@@ -1,6 +1,12 @@
 from aiohttp import web
+
+import configparser
 import aiohttp
 import asyncio
+
+
+config = configparser.ConfigParser()
+config.read("config.ini")
 
 
 def generate_connector(limit=50):
