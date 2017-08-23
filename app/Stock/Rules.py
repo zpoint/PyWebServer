@@ -1,25 +1,24 @@
+from collections import OrderedDict
+
 
 class Rules(object):
-    all_rules = {
+    all_rules = OrderedDict([
+        ("up_up", (1, "上上")),  # rule name: (value, description)
+        ("up_left", (1 << 1, "上左")),
+        ("up_right", (1 << 2, "上右")),
+    ])
 
-    }
-
-    @staticmethod
-    def up_up():
+    def up_up(self):
         pass
 
-    @staticmethod
-    def up_left():
+    def up_left(self):
         pass
 
-    @staticmethod
-    def up_right():
+    def up_right(self):
         pass
 
-    @staticmethod
-    def down_left():
-        pass
+    def has_rule(self, r, rule_name):
+        val, _ = self.all_rules[rule_name]
+        return r["rules"] & val
 
-    @staticmethod
-    def down_right():
-        pass
+rule = Rules()

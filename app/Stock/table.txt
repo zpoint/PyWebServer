@@ -17,9 +17,13 @@ create table user_info(
    invite_code VARCHAR(100),
    inviting_code VARCHAR(100),
    rules BIGINT DEFAULT 0,
+   base_value INT DEFAULT 1,
+   stock_times VARCHAR(1000),
+   remote_valid BOOLEAN,
+   working_period VARCHAR(100),
    PRIMARY KEY ( userid ),
    UNIQUE (username),
    UNIQUE (bind_password)
 );
 
-SELECT userid, username, password, bind_username, bind_password, last_active_time, ip, expired, previous_page, prefer_host, invite_code, inviting_code from user_info;
+SELECT userid, username, password, bind_username, bind_password, last_active_time, ip, expired, previous_page, prefer_host, invite_code, inviting_code, remote_valid from user_info;

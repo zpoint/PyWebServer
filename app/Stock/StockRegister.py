@@ -1,7 +1,5 @@
-import random
 from aiohttp import web
 from aiohttp.web import View
-from urllib.parse import urlencode
 
 from app.Stock.DataBase import DBUtil
 from ConfigureUtil import Headers, WebPageBase, ErrorReturn

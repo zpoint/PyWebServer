@@ -9,15 +9,15 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 
 
-def generate_connector(limit=50):
+def generate_connector(loop, limit=50):
     """
     https://github.com/KeepSafe/aiohttp/issues/883
     if connector is passed to session, it is not available anymore
     """
-    return aiohttp.TCPConnector(limit=limit, loop=global_loop)
+    return aiohttp.TCPConnector(limit=limit, loop=loop)
 
 global_loop = asyncio.get_event_loop()
-global_session = aiohttp.ClientSession(connector=generate_connector(), loop=global_loop)
+global_session = aiohttp.ClientSession(connector=generate_connector(loop=global_loop), loop=global_loop)
 
 
 class Headers(object):

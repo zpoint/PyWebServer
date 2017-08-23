@@ -8,18 +8,9 @@ from urllib.parse import urlencode
 
 from app.Stock.DataBase import DBUtil
 from app.Stock.Config import config
-from app.Stock.FunctionUtil import generate_cookie, get_cookie_dict
+from app.Stock.FunctionUtil import generate_cookie, get_cookie_dict, generate_headers
 from ConfigureUtil import Headers, global_session, global_loop, ErrorReturn
 
-
-def generate_headers():
-    return {
-        "Host": "",
-        "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0",
-        "Accept": "*/*",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Connection": "close"
-    }
 
 async def get_cid_and_cname(host):
     url = host + "/sscbz3547472f/user/login.html.auth"
@@ -108,9 +99,17 @@ class StockLogin(View):
             return web.Response(text="""<head><meta http-equiv="refresh" content="0;url=%s"></head>""" %
                                      ("/Stock/StockBind", ),
                                 headers=Headers.html_headers)
+        else:
+            return web.Response(text="""<head><meta http-equiv="refresh" content="0;url=%s"></head>""" %
+                                     ("/Stock/StockMonitor", ),
+                                headers=Headers.html_headers)
 
     @staticmethod
-    async def get_img_byte(r):
+    async def get_img_byte(r, old_user=False):
+        if old_user:
+            r["bind_cookie"] = None
+            r["bind_param"] = None
+
         values_a, values_b = await asyncio.gather(get_cid_and_cname(r["prefer_host"]),
                                                   get_code_info(r["prefer_host"], config["remote"]["systemversion"]),
                                                   loop=global_loop)
@@ -126,6 +125,4 @@ class StockLogin(View):
 
         byte_img, cookie_dict_img = await get_verify_code(r["prefer_host"], r["bind_param"]["c_user"], r["bind_cookie"])
         DBUtil.update_param(r, {}, cookie_dict_img)
-        # save img here
-        # save done
         return byte_img
