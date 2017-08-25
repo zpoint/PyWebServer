@@ -76,27 +76,16 @@ class RefreshMgr(Thread):
                 await asyncio.sleep(random.randint(10, 15), loop=self.loop)
 
     async def get_info_until_success(self, info):
+        global clear_flag
         for each_info in info:
             result = await self.get_info(each_info)
+            print("After get result")
+            print(stock_pool)
             if result is True:
                 if clear_flag:
-                    self.clear_out_date_pool()
-
-    @staticmethod
-    def clear_out_date_pool():
-        global clear_flag
-
-        del_keys = list()
-        now = datetime.now()
-        for k in stock_pool.keys():
-            date = datetime.strptime(k, "%Y-%m-%d - %H:%M")
-            if date.day != now.day:
-                del_keys.append(k)
-
-        if del_keys:
-            for key in del_keys:
-                del stock_pool[key]
-            clear_flag = False
+                    clear_flag = stock_pool.clear_out_date()
+                print("After clear")
+                print(stock_pool)
 
     async def get_info(self, user_info):
         now = datetime.now()
@@ -119,19 +108,21 @@ class RefreshMgr(Thread):
                 json_obj = json.loads(result.group(0))
 
                 for each_result in json_obj["data"]["result"]:
-                    stock_pool[str(now.year) + "-" + each_result[1]] = each_result
+                    stock_pool[str(now.year) + "-" + each_result[1]] = each_result[2:]
 
                 cookie_dict = get_cookie_dict(resp.cookies)
                 if cookie_dict:
                     self.db.update_cookie(user_info, cookie_dict)
 
                 if json_obj["data"]["result"] and len(json_obj["data"]["result"]) > 2:
-                    global next_refresh_data
+                    global next_refresh_data, clear_flag
                     prev_date = datetime.strptime(str(now.year) + "-" + json_obj["data"]["result"][1][1],
                                                   "%Y-%m-%d - %H:%M")
                     curr_date = datetime.strptime(str(now.year) + "-" + json_obj["data"]["result"][0][1],
                                                   "%Y-%m-%d - %H:%M")
                     next_refresh_data = curr_date + (curr_date - prev_date)
+                    if next_refresh_data.day != curr_date.day:
+                        clear_flag = True
                     logging.info("next_refresh_data " + str(next_refresh_data))
                 return True
         except Exception as e:

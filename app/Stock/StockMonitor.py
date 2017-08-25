@@ -109,20 +109,24 @@ class StockMonitor(View):
             </table>""" % (quote(base64.encodebytes(img_byte)), self.path)
             return body
         else:
+            rule_table, row_count = self.get_rule_table(r)
             return """
             <table align="center">
             <tr><td>%s</td>
                 <td>%s</td>
             </table>
-            """ % (self.get_rule_table(r), self.get_stock_info_table())
+            """ % (rule_table, self.get_stock_info_table(row_count))
 
     def get_rule_table(self, r):
+        row_count = 0
         body = "<table border=1>"
         body += "<caption><h3>我的规则</h3></caption>"
         for rule_name, values in rule.all_rules.items():
-            _, desc = values
-            body += '<tr><td><label><input name="rule" type="checkbox" value="%s" %s /></label></td><td>%s</td>' \
-                    '</tr>' % ('checked="checked' if rule.has_rule(r, rule_name) else "", rule_name, desc)
+            _, desc, color = values
+            body += '<tr><td><label><input name="rule" type="checkbox" value="%s" %s /></label></td><td ' \
+                    'bgcolor="%s">%s</td></tr>' % \
+                    ('checked="checked' if rule.has_rule(r, rule_name) else "", rule_name, color, desc)
+            row_count += 1
 
         body += '<tr><td>基数</td><td><input type="text" name="base_value", value="%s", pattern="^(\d){1,}.?(\d+)?$", ' \
                 'title="基数, 单位人民币, 请看倍数说明" /></td></tr>' % (r["base_value"], )
@@ -133,15 +137,22 @@ class StockMonitor(View):
                 'title="进行自动购买的时段, 起始小时-结束小时, 00-24为全天, 00-00为不进行购买, 08-12为早上8点至中午12点" />' \
                 '</td></tr>' % (r["working_period"], )
         body += "</table>"
-        return body
+        return body, row_count + 3
 
-
-    def get_stock_info_table(self):
+    def get_stock_info_table(self, row_count):
         body = "<table>"
+        if not stock_pool:
+            body += "<caption><h3>今日还未有结果</h3></caption>"
+        else:
+            body += "<caption><h3>今日结果</h3></caption>"
+
         count = 0
         for date, value in stock_pool.items():
+            # body += "<tr><td>
             count += 1
-            # body += "<tr><td>"
+            if count > row_count:
+                break
+
         body += "</table>"
         return body
 

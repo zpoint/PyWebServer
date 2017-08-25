@@ -2,10 +2,12 @@ from collections import OrderedDict
 
 
 class Rules(object):
+    repeat_color = "#FFFFFF"
+
     all_rules = OrderedDict([
-        ("up_up", (1, "上上")),  # rule name: (value, description)
-        ("up_left", (1 << 1, "上左")),
-        ("up_right", (1 << 2, "上右")),
+        ("down", (1, "下", "#33FF00")),  # rule name: (value, description, color)   绿
+        ("down_left", (1 << 1, "下左", "	#FF0000")),  # 红
+        ("down_right", (1 << 2, "下右", "#0000FF")),  # 蓝
     ])
 
     def up_up(self):
