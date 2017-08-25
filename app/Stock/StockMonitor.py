@@ -115,7 +115,7 @@ class StockMonitor(View):
             <tr><td>%s</td>
                 <td>%s</td>
             </table>
-            """ % (rule_table, self.get_stock_info_table(row_count))
+            """ % (rule_table, self.get_stock_info_table(r, row_count))
 
     def get_rule_table(self, r):
         row_count = 0
@@ -139,7 +139,7 @@ class StockMonitor(View):
         body += "</table>"
         return body, row_count + 3
 
-    def get_stock_info_table(self, row_count):
+    def get_stock_info_table(self, r, row_count):
         body = "<table>"
         if not stock_pool:
             body += "<caption><h3>今日还未有结果</h3></caption>"
@@ -147,7 +147,7 @@ class StockMonitor(View):
             body += "<caption><h3>今日结果</h3></caption>"
 
         count = 0
-        for date, value in stock_pool.items():
+        for date, first_ball in stock_pool.items():
             # body += "<tr><td>
             count += 1
             if count > row_count:

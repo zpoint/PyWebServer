@@ -107,6 +107,7 @@ class RefreshMgr(Thread):
                     return False
                 json_obj = json.loads(result.group(0))
 
+                json_obj["data"]["result"].reverse()  # sort before insert
                 for each_result in json_obj["data"]["result"]:
                     stock_pool[str(now.year) + "-" + each_result[1]] = each_result[2:]
 

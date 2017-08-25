@@ -23,4 +23,9 @@ class Rules(object):
         val, _ = self.all_rules[rule_name]
         return r["rules"] & val
 
+    def get_color(self, r, ball):
+        for rule_name in self.all_rules.keys():
+            if self.has_rule(r, rule_name):
+                pass
+
 rule = Rules()
