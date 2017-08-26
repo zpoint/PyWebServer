@@ -84,6 +84,8 @@ class RefreshMgr(Thread):
             if result is True:
                 if clear_flag:
                     clear_flag = stock_pool.clear_out_date()
+                # buy here
+                # buy done
                 print("After clear")
                 print(stock_pool)
 

@@ -1,12 +1,16 @@
+import copy
 import base64
+import random
 from aiohttp import web
 from aiohttp.web import View
 from urllib.parse import quote
+from datetime import datetime
 
 from app.Stock.Rules import rule
 from app.Stock.DataBase import DBUtil
 from app.Stock.Config import stock_pool
 from app.Stock.StockLogin import StockLogin, login
+from app.Stock.RefreshManger import next_refresh_data
 from ConfigureUtil import Headers, WebPageBase, ErrorReturn
 
 
@@ -22,21 +26,26 @@ class StockMonitor(View):
         </table>
         """ % (r["username"], r["bind_username"], "线路", r["expired"].strftime("%Y-%m-%d"), r["inviting_code"].upper())
 
-    @staticmethod
-    def get_recent_table(r):
-        pass
+    async def re_login(self, r, post_body):
+        post_body.update(r["bind_param"])
+        post_body["username"] = r["bind_username"]
+        post_body["password"] = r["bind_password"]
+        keys = ("verify_code", "verify_value", "username", "password", "cid", "cname")
+        for key in keys:
+            if key not in post_body:
+                return ErrorReturn.invalid(title="参数不合法", main_path=self.path)
 
-    @staticmethod
-    def functional_menu(r):
-        pass
+        success, cookie_dict = await login(r["prefer_host"], post_body["verify_code"], post_body["verify_value"],
+                                           post_body["username"], post_body["password"], post_body["cid"],
+                                           post_body["cname"], r["bind_cookie"])
 
-    @staticmethod
-    def rule_tables(r):
-        string = '<label><input name="Fruit" type="checkbox" value="" />苹果 </label> '
-
-    @staticmethod
-    def get_line_info(r):
-        pass
+        if not success:
+            return ErrorReturn.html(cookie_dict, self.path)
+        else:
+            DBUtil.update_param(r, {}, cookie_dict, False)
+            DBUtil.set_cookie_valid(r)
+            html = await self.get_content_html(r)
+            return web.Response(text=html, headers=Headers.html_headers)
 
     async def get_content_html(self, r):
         html = WebPageBase.head("监控系统")
@@ -46,6 +55,29 @@ class StockMonitor(View):
             """
         html += await self.get_middle_content(r)
         html += "</form>"
+        if next_refresh_data:
+            now = datetime.now()
+            next_seconds = (next_refresh_data - now).second + random.randint(15, 30)
+        else:
+            next_seconds = 5 * 60
+
+        html += """
+            <span id="time">%d</span> 秒后自动刷新</a></p>
+            <script type="text/javascript">  
+            delayURL();    
+            function delayURL() { 
+            var delay = document.getElementById("time").innerHTML;
+                    var t = setTimeout("delayURL()", 1000);
+                if (delay > 0) {
+                    delay--;
+                    document.getElementById("time").innerHTML = delay;
+                } else {
+                    clearTimeout(t); 
+                    window.location.href = "%s";
+                }        
+                } 
+                </script>
+        """ % (next_seconds, self.path)
         html += "</body></html>"
         return html
 
@@ -71,27 +103,58 @@ class StockMonitor(View):
         post_body = dict()
         for v in values:
             inner_values = v.split("=")
+            if inner_values[0] == "rule":
+                if "rule" in post_body:
+                    post_body["rule"].append(inner_values[1])
+                else:
+                    post_body["rule"] = [inner_values[1]]
+
             post_body[inner_values[0]] = inner_values[1]
 
-        post_body.update(r["bind_param"])
-        post_body["username"] = r["bind_username"]
-        post_body["password"] = r["bind_password"]
-        keys = ("verify_code", "verify_value", "username", "password", "cid", "cname")
-        for key in keys:
-            if key not in post_body:
-                return ErrorReturn.invalid(title="参数不合法", main_path=self.path)
-
-        success, cookie_dict = await login(r["prefer_host"], post_body["verify_code"], post_body["verify_value"],
-                                           post_body["username"], post_body["password"], post_body["cid"],
-                                           post_body["cname"], r["bind_cookie"])
-
-        if not success:
-            return ErrorReturn.html(cookie_dict, self.path)
+        if "verify_code" in post_body:
+            return await self.re_login(r, post_body)
         else:
-            DBUtil.update_param(r, {}, cookie_dict, False)
-            DBUtil.set_cookie_valid(r)
+            for key in ("base_value", "stock_times", "working_period"):
+                if key not in post_body:
+                    return ErrorReturn.invalid("非法访问", main_path=self.path)
+
+            success, reason = self.update_personal_val(post_body, r)
+            if not success:
+                return ErrorReturn.invalid(reason, main_path=self.path)
+
             html = await self.get_content_html(r)
             return web.Response(text=html, headers=Headers.html_headers)
+
+    @staticmethod
+    def update_personal_val(post_body, r):
+        if "rule" in post_body:
+            new_rule_val = rule.get_rule_val(post_body["rule"])
+        else:
+            new_rule_val = r["rules"]
+        try:
+            new_base_val = float(post_body["base_value"])
+        except ValueError:
+            return False, "请输入整数或者小数基数"
+
+        values = post_body["stock_times"].split("-")
+        if len(values) < 2:
+            return False, "倍数输入有误"
+        for i in values:
+            if not i.isdigit():
+                return False, "输入的倍数必须为整数"
+
+        new_stock_val = post_body["stock_times"]
+
+        new_period = post_body["working_period"]
+        values = new_period.split("-")
+        if len(values) != 2:
+            return False, "进行自动购买的时段需同 00-24 格式一致"
+        left, right = values
+        if not left.isdigit() or not right.isdigit():
+            return False, "进行自动购买的时段需同 00-24 格式一致, 两边均为整数"
+        if int(left) > 24 or int(left) < 0 or int(right) > 24 or int(right) < 0:
+            return False, "进行自动购买的时段需同 00-24 格式一致, 时段需在24小时范围内"
+        DBUtil.update_base(r, new_rule_val, new_base_val, new_stock_val, new_period)
 
     async def get_middle_content(self, r):
         if not DBUtil.check_cookie_valid(r):
@@ -114,6 +177,8 @@ class StockMonitor(View):
             <table align="center">
             <tr><td>%s</td>
                 <td>%s</td>
+            </tr>
+            <tr><td><input type="submit" align="center" value="提交" /></td></tr>
             </table>
             """ % (rule_table, self.get_stock_info_table(r, row_count))
 
@@ -147,12 +212,21 @@ class StockMonitor(View):
             body += "<caption><h3>今日结果</h3></caption>"
 
         count = 0
-        for date, first_ball in stock_pool.items():
-            # body += "<tr><td>
+        temp_pool = copy.deepcopy(stock_pool)
+        rule.paint(r, temp_pool)
+        for date, first_ball in temp_pool.items():
+            body += "<tr>"
+            for ball in first_ball:
+                body += '<td' + (' bgcolor="%s">' % (ball.color, ) if ball.color else '>')
+                if ball.color == rule.repeat_color:
+                    body += '<font bgcolor="%s">%s</font>' % (rule.repeat_font_color, ball.keyword)
+                else:
+                    body += ball.keyword
+                body += "</td>"
+            body += "</tr>\n"
             count += 1
             if count > row_count:
                 break
 
         body += "</table>"
         return body
-

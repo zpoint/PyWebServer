@@ -155,9 +155,19 @@ class DataBaseUtil(object):
         self.client.commit()
 
     def check_cookie_valid(self, r):
-        query = "SELECT remote_valid from user_info WHERE userid=%d" % (r["userid"], )
+        query = "SELECT remote_valid FROM user_info WHERE userid=%d" % (r["userid"], )
         self.cursor.execute(query)
         self.client.commit()
         return self.cursor.fetchone()["remote_valid"]
+
+    def update_base(self, r, new_rule_val, new_base_val, new_stock_val, new_period):
+        if r["rules"] == new_rule_val and r["base_value"] == new_base_val and r["stock_times"] == new_stock_val and \
+                        r["working_period"] == new_period:
+            return
+        query = 'UPDATE user_info SET rules=%d, base_value=%d, stock_times="%s", working_period="%s" WHERE ' \
+                'userid="%d"' % (new_rule_val, new_base_val, new_stock_val, new_period, r["userid"])
+
+        self.cursor.execute(query)
+        self.client.commit()
 
 DBUtil = DataBaseUtil()

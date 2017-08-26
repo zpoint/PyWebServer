@@ -13,6 +13,7 @@ class Ball(object):
         self.left = left
         self.right = right
         self.keyword = keyword
+        self.color = None
         self.length = 0
 
     def iter_horizontal(self):
@@ -61,7 +62,7 @@ class StockPoll(object):
                 down.up = ball
             # set right of prev ball
             if prev_ball:
-                prev_ball.right = None
+                prev_ball.right = ball
 
             prev_ball = ball
             index += 1
@@ -80,15 +81,7 @@ class StockPoll(object):
                 del_keys.append(key)
         for key in del_keys:
             for ball in self.bucket[key]:
-                if ball.up is not None:
-                    ball.up.down = None
-                    ball.up = None
-                if ball.down is not None:
-                    ball.down.up = None
-                    ball.down = None
-                if ball.left is not None:
-                    ball.left.right = None
-                    ball.left = None
+                self.clear_reference(ball)
             del self.bucket[key]
 
         return True if del_keys else False
@@ -107,5 +100,35 @@ class StockPoll(object):
 
     def items(self):
         return self.bucket.items()
+
+    @staticmethod
+    def clear_reference(ball):
+        if ball.up is not None:
+            ball.up.down = None
+            ball.up = None
+        if ball.down is not None:
+            ball.down.up = None
+            ball.down = None
+        if ball.left is not None:
+            ball.left.right = None
+            ball.left = None
+
+    def __deepcopy__(self, memo):
+        new_pool = StockPoll()
+        keys = list(self.bucket.keys())
+        keys.reverse()
+
+        for reversed_key in keys:
+            words = list()
+            first_ball = self.bucket[reversed_key]
+            for ball in first_ball:
+                words.append(ball.keyword)
+            new_pool[reversed_key] = words
+
+    def __del__(self):
+        for key in list(self.bucket.values()):
+            for ball in self.bucket[key]:
+                self.clear_reference(ball)
+            del self.bucket[key]
 
 stock_pool = StockPoll()
