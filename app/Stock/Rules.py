@@ -13,29 +13,32 @@ class Rules(object):
 
     def down(self, ball):
         color = self.all_rules[self.down.__name__][2]
-        if ball.down and ball.keyword == ball.down.keyword:
+        self.repeat_color = color
+        if ball.down is not None and ball.keyword == ball.down.keyword:
             ball.color = self.repeat_color if ball.color else color
             ball.down.color = self.repeat_color if ball.down.color else color
 
     def down_left(self, ball):
         color = self.all_rules[self.down_left.__name__][2]
-        if ball.down and ball.down.left and ball.down.keyword == ball.down.left.keyword:
-            ball.down = self.repeat_color if ball.down.color else color
-            ball.down.left = self.repeat_color if ball.down.left.color else color
+        self.repeat_color = color
+        if (ball.down is not None) and (ball.down.left is not None) and ball.down.keyword == ball.down.left.keyword:
+            ball.down.color = self.repeat_color if ball.down.color else color
+            ball.down.left.color = self.repeat_color if ball.down.left.color else color
 
     def down_right(self, ball):
         color = self.all_rules[self.down_right.__name__][2]
-        if ball.down and ball.down.right and ball.down.keyword == ball.down.right.keyword:
-            ball.down = self.repeat_color if ball.down.color else color
-            ball.down.right = self.repeat_color if ball.down.right.color else color
+        self.repeat_color = color
+        if (ball.down is not None) and (ball.down.right is not None) and ball.down.keyword == ball.down.right.keyword:
+            ball.down.color = self.repeat_color if ball.down.color else color
+            ball.down.right.color = self.repeat_color if ball.down.right.color else color
 
     def has_rule(self, r, rule_name):
-        val, _ = self.all_rules[rule_name]
+        val, _, __ = self.all_rules[rule_name]
         return r["rules"] & val
 
     def paint(self, r, stock_pool):
         rule_func = list()
-        for rule_name, values in self.all_rules:
+        for rule_name, values in self.all_rules.items():
             if self.has_rule(r, rule_name):
                 rule_func.append(getattr(self, rule_name))
 

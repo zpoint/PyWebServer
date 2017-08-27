@@ -5,6 +5,7 @@ import logging
 import time
 import asyncio
 import random
+import traceback
 from datetime import datetime
 from threading import Thread
 from ConfigureUtil import generate_connector
@@ -12,7 +13,7 @@ from app.Stock.Config import stock_pool
 from app.Stock.DataBase import DataBaseUtil
 from app.Stock.FunctionUtil import generate_cookie, get_cookie_dict, generate_headers
 
-next_refresh_data = None
+next_refresh_data = list()
 clear_flag = False
 
 
@@ -57,6 +58,7 @@ class RefreshMgr(Thread):
         return True
 
     async def refresh_main(self):
+        global next_refresh_data
         while True:
             try:
                 info = self.db.get_info_whose_cookie_is_valid()
@@ -67,27 +69,23 @@ class RefreshMgr(Thread):
                     tasks = list()
                     for each in info:
                         tasks.append(self.loop.create_task(self.refresh_person(each)))
-                    if next_refresh_data is None or datetime.now() > next_refresh_data:
+                    if not next_refresh_data or datetime.now() > next_refresh_data[0]:
                         tasks.append(self.get_info_until_success(info))
                     await asyncio.wait(tasks, loop=self.loop)
 
             except Exception as e:
-                logging.error(str(e))
+                logging.error(traceback.format_exc())
                 await asyncio.sleep(random.randint(10, 15), loop=self.loop)
 
     async def get_info_until_success(self, info):
         global clear_flag
         for each_info in info:
             result = await self.get_info(each_info)
-            print("After get result")
-            print(stock_pool)
             if result is True:
                 if clear_flag:
                     clear_flag = stock_pool.clear_out_date()
                 # buy here
                 # buy done
-                print("After clear")
-                print(stock_pool)
 
     async def get_info(self, user_info):
         now = datetime.now()
@@ -109,25 +107,26 @@ class RefreshMgr(Thread):
                     return False
                 json_obj = json.loads(result.group(0))
 
+                if json_obj["data"]["result"] and len(json_obj["data"]["result"]) > 2:
+                    global clear_flag
+                    prev_date = datetime.strptime(str(now.year) + "-" + json_obj["data"]["result"][1][1],
+                                                  "%Y-%m-%d - %H:%M")
+                    curr_date = datetime.strptime(str(now.year) + "-" + json_obj["data"]["result"][0][1],
+                                                  "%Y-%m-%d - %H:%M")
+                    next_refresh_data.append(curr_date + (curr_date - prev_date))
+                    if next_refresh_data[0].day != curr_date.day:
+                        clear_flag = True
+                    logging.info("next_refresh_data " + str(next_refresh_data[0]))
+
                 json_obj["data"]["result"].reverse()  # sort before insert
+
                 for each_result in json_obj["data"]["result"]:
                     stock_pool[str(now.year) + "-" + each_result[1]] = each_result[2:]
 
                 cookie_dict = get_cookie_dict(resp.cookies)
                 if cookie_dict:
                     self.db.update_cookie(user_info, cookie_dict)
-
-                if json_obj["data"]["result"] and len(json_obj["data"]["result"]) > 2:
-                    global next_refresh_data, clear_flag
-                    prev_date = datetime.strptime(str(now.year) + "-" + json_obj["data"]["result"][1][1],
-                                                  "%Y-%m-%d - %H:%M")
-                    curr_date = datetime.strptime(str(now.year) + "-" + json_obj["data"]["result"][0][1],
-                                                  "%Y-%m-%d - %H:%M")
-                    next_refresh_data = curr_date + (curr_date - prev_date)
-                    if next_refresh_data.day != curr_date.day:
-                        clear_flag = True
-                    logging.info("next_refresh_data " + str(next_refresh_data))
                 return True
         except Exception as e:
-            logging.error(str(e))
+            logging.error(traceback.format_exc())
             logging.error("Unable to get_info for userid: %s, username: %s" % (user_info["userid"], user_info["username"]))

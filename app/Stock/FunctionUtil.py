@@ -1,12 +1,14 @@
 
-def generate_headers():
+def generate_headers(connection="close"):
     return {
         "Host": "",
-        "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0 Mozilla/5.0 (X11; "
-                      "Ubuntu; Linux x86_64; rv:55.0) Gecko/20100101 Firefox/55.0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.3 (KHTML, like Gecko)"
+                      " Chrome/19.0.1061.0 Safari/536.3",
         "Accept": "*/*",
         "Accept-Language": "en-US,en;q=0.5",
-        "Connection": "close"
+        "Upgrade-Insecure-Requests": "1",
+        "Accept-Encoding": "gzip, deflate",
+        "Connection": connection
     }
 
 

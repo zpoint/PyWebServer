@@ -5,6 +5,7 @@ import lxml.html
 from aiohttp import web
 from aiohttp.web import View
 from urllib.parse import urlencode
+from collections import OrderedDict
 
 from app.Stock.DataBase import DBUtil
 from app.Stock.Config import config
@@ -14,7 +15,7 @@ from ConfigureUtil import Headers, global_session, global_loop, ErrorReturn
 
 async def get_cid_and_cname(host):
     url = host + "/sscbz3547472f/user/login.html.auth"
-    basic_headers = generate_headers()
+    basic_headers = generate_headers(connection="keep-alive")
     basic_headers["Host"] = host.replace("http://", "")
     async with global_session.get(url, headers=basic_headers) as resp:
         text = await resp.text()
@@ -30,7 +31,7 @@ async def get_code_info(host, sys_version):
         "systemversion": sys_version,
         ".auth": ""
     })
-    basic_headers = generate_headers()
+    basic_headers = generate_headers(connection="keep-alive")
     basic_headers["Host"] = host.replace("http://", "")
     async with global_session.get(url, headers=basic_headers) as resp:
         text = await resp.text()
@@ -43,7 +44,7 @@ async def get_verify_code(host, c_user, cookie_dict):
         "systemversion": config["remote"]["systemversion"],
         ".auth": ""
     })
-    basic_headers = generate_headers()
+    basic_headers = generate_headers(connection="keep-alive")
     basic_headers["Host"] = host.replace("http://", "")
     basic_headers["Cookie"] = generate_cookie(cookie_dict)
     async with global_session.get(url, headers=basic_headers) as resp:
@@ -52,20 +53,22 @@ async def get_verify_code(host, c_user, cookie_dict):
 
 async def login(host, verify_code, verify_value, username, password, cid, cname, cookie_dict):
     url = host + "/loginVerify/.auth"
-    param = {
-        "VerifyCode": verify_code,
-        "__VerifyValue": verify_value,
-        "__name": username,
-        "password": password,
-        "isSec": "0",
-        "cid": cid,
-        "cname": cname,
-        "systemversion": config["remote"]["systemversion"],
-    }
+    param = OrderedDict([
+        ("VerifyCode", verify_code),
+        ("__VerifyValue", verify_value),
+        ("__name", username),
+        ("password", password),
+        ("isSec", "0"),
+        ("cid", cid),
+        ("cname", cname),
+        ("systemversion", config["remote"]["systemversion"]),
+    ])
     basic_headers = generate_headers()
     basic_headers["Referer"] = host + "/sscbz3547472f/user/login.html.auth"
     basic_headers["Host"] = host.replace("http://", "")
     basic_headers["Cookie"] = generate_cookie(cookie_dict)
+    basic_headers["Origin"] = "http://pc12.x.sss33.us"
+    basic_headers["Content-Type"] = "application/x-www-form-urlencoded;"
     async with global_session.post(url, data=urlencode(param), headers=basic_headers) as resp:
         html = await resp.text()
 
@@ -79,6 +82,7 @@ async def login(host, verify_code, verify_value, username, password, cid, cname,
         cookie_dict_a = get_cookie_dict(resp.cookies)
         cookie_dict.update(cookie_dict_a)
         basic_headers["Cookie"] = generate_cookie(cookie_dict)
+        basic_headers["Connection"] = "keep-alive"
 
         real_login_host = real_login_host.group(0).strip().replace("host", host.replace("http://", ""))
         async with global_session.get(real_login_host, headers=basic_headers) as resp2:

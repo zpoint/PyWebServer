@@ -28,6 +28,14 @@ class Ball(object):
             yield down
             down = self.down
 
+    def __getitem__(self, item):
+        index = 0
+        ball = self
+        while index < item:
+            ball = ball.right
+            index += 1
+        return ball
+
     def __len__(self):
         return self.length
 
@@ -44,24 +52,25 @@ class StockPoll(object):
             key = datetime.datetime.strptime(key, "%Y-%m-%d - %H:%M")
         if key in self.bucket:
             return  # doesn't handle the case when key the same but value different
+        if words[0] == "":
+            return
 
-        values = list(self.bucket.values())
-        down_line = values[0] if values else None
-
+        keys = list(self.bucket.keys())
+        down_line = self.bucket[keys[-1]] if keys else None
         prev_ball = None
         index = 0
         for word in words:
             up = None
-            down = down_line[index] if down_line else None
+            down = down_line[index] if down_line is not None else None
             left = prev_ball
             right = None
-            ball = Ball(up, down, left, right, word)
+            ball = Ball(up, down, left, right, str(word))
             if index == 0:
                 self.bucket[key] = ball
             if down:
                 down.up = ball
             # set right of prev ball
-            if prev_ball:
+            if prev_ball is not None:
                 prev_ball.right = ball
 
             prev_ball = ball
@@ -87,19 +96,24 @@ class StockPoll(object):
         return True if del_keys else False
 
     def __str__(self):
+        body = ""
         for date, first_ball in self.bucket.items():
-            print(date, end="")
+            body += str(date) + " "
             for ball in first_ball:
-                print(ball.keyword, end=" ")
-            print("")
+                body += ball.keyword + " "
+            body += "\n"
         if not self.bucket:
-            print("Empty stock_pool")
+            body = "Empty stock_pool"
+        return body
 
     def __bool__(self):
         return bool(self.bucket)
 
     def items(self):
-        return self.bucket.items()
+        keys = list(self.bucket.keys())
+        keys.reverse()
+        for k in keys:
+            yield k, self.bucket[k]
 
     @staticmethod
     def clear_reference(ball):
@@ -116,17 +130,17 @@ class StockPoll(object):
     def __deepcopy__(self, memo):
         new_pool = StockPoll()
         keys = list(self.bucket.keys())
-        keys.reverse()
 
-        for reversed_key in keys:
+        for key in keys:
             words = list()
-            first_ball = self.bucket[reversed_key]
+            first_ball = self.bucket[key]
             for ball in first_ball:
                 words.append(ball.keyword)
-            new_pool[reversed_key] = words
+            new_pool[key] = words
+        return new_pool
 
     def __del__(self):
-        for key in list(self.bucket.values()):
+        for key in list(self.bucket.keys()):
             for ball in self.bucket[key]:
                 self.clear_reference(ball)
             del self.bucket[key]
