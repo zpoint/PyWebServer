@@ -3,7 +3,7 @@ import base64
 import random
 from aiohttp import web
 from aiohttp.web import View
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 from datetime import datetime
 
 from app.Stock.Rules import rule
@@ -198,23 +198,42 @@ class StockMonitor(View):
             <td><input type="submit" align="center" value="提交" /></td>
             <td><a href="%s" align="center">刷新</a></td>
             <td><a href="%s" align="center">%s</a></td>
+            <td><a href="%s" align="center">%s</a></td>
             </tr>
             </table>
-            """ % (rule_table, self.get_stock_info_table(r, row_count), self.path,
-                   extra_results["show_all_path"], extra_results["show_all_keyword"])
+            """ % (rule_table, self.get_stock_info_table(r, row_count, extra_results), self.path,
+                   extra_results["show_all_path"], extra_results["show_all_keyword"],
+                   extra_results["only_number_path"], extra_results["number_keyword"])
 
     def get_show_all_info(self, row_count):
         query = self.request.query
         extra_results = dict()
+        path_dict = dict()
         if "show_all" in query and query["show_all"] == "1":
             extra_results["show_all_keyword"] = "显示%d条结果" % (row_count, )
-            extra_results["show_all_path"] = self.path
+            path_dict.update(query)
+            path_dict["show_all"] = "0"
+            extra_results["show_all_path"] = self.path + "?" + urlencode(path_dict)
             extra_results["whether_show_all"] = True
         else:
-            extra_results["show_all_keyword"] = "显示%d条结果" % (row_count, )
-            extra_results["show_all_path"] = self.path
-            extra_results["whether_show_all"] = True
-        if extra_results
+            extra_results["show_all_keyword"] = "显示全部结果"
+            path_dict.update(query)
+            path_dict["show_all"] = "1"
+            extra_results["show_all_path"] = self.path + "?" + urlencode(path_dict)
+            extra_results["whether_show_all"] = False
+        if "only_number" in query and query["only_number"] == "1":
+            extra_results["number_keyword"] = "显示数字和生肖"
+            path_dict.update(query)
+            path_dict["only_number"] = "0"
+            extra_results["only_number_path"] = self.path + "?" + urlencode(path_dict)
+            extra_results["only_number"] = True
+        else:
+            extra_results["number_keyword"] = "只显示数字"
+            path_dict.update(query)
+            path_dict["only_number"] = "1"
+            extra_results["only_number_path"] = self.path + "?" + urlencode(path_dict)
+            extra_results["only_number"] = False
+
         return extra_results
 
     def get_rule_table(self, r):
@@ -239,7 +258,10 @@ class StockMonitor(View):
         body += "</table>"
         return body, row_count + 3
 
-    def get_stock_info_table(self, r, row_count):
+    def get_stock_info_table(self, r, row_count, extra_info):
+        if "whether_show_all" in extra_info and extra_info["whether_show_all"]:
+            row_count = 0
+
         body = "<table border=1>"
         if not stock_pool:
             body += "<caption><h3>今日还未有结果</h3></caption>"
@@ -253,13 +275,18 @@ class StockMonitor(View):
         rule.paint(r, temp_pool)
         for date, first_ball in temp_pool.items():
             body += "<tr><td>%s</td>" % (date.strftime("%H:%M"), )
+            ball_count = 0
             for ball in first_ball:
+                ball_count += 1
                 body += '<td align="center"' + (' bgcolor="%s">' % (ball.color, ) if ball.color else '>')
                 if ball.color == rule.repeat_color:
                     body += '<font align="center" bgcolor="%s">%s</font>' % (rule.repeat_font_color, ball.keyword)
                 else:
                     body += ball.keyword
                 body += "</td>"
+                if "only_number" in extra_info and extra_info["only_number"] and ball_count >= 12:
+                    break
+
             body += "</tr>\n"
             count += 1
             if row_count and count > row_count:
