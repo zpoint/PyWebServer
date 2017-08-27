@@ -88,7 +88,7 @@ class StockMonitor(View):
                 }        
                 } 
                 </script>
-        """ % (next_seconds, self.path)
+        """ % (next_seconds, self.path + (("?" + urlencode(self.request.query)) if self.request.query else ""))
         return body
 
     async def get(self):
@@ -140,7 +140,7 @@ class StockMonitor(View):
         if "rule" in post_body:
             new_rule_val = rule.get_rule_val(post_body["rule"])
         else:
-            new_rule_val = r["rules"]
+            new_rule_val = rule.init_rule_val
         try:
             new_base_val = float(post_body["base_value"])
         except ValueError:
@@ -201,7 +201,8 @@ class StockMonitor(View):
             <td><a href="%s" align="center">%s</a></td>
             </tr>
             </table>
-            """ % (rule_table, self.get_stock_info_table(r, row_count, extra_results), self.path,
+            """ % (rule_table, self.get_stock_info_table(r, row_count, extra_results),
+                   self.path + (("?" + urlencode(self.request.query)) if self.request.query else ""),
                    extra_results["show_all_path"], extra_results["show_all_keyword"],
                    extra_results["only_number_path"], extra_results["number_keyword"])
 
@@ -221,6 +222,9 @@ class StockMonitor(View):
             path_dict["show_all"] = "1"
             extra_results["show_all_path"] = self.path + "?" + urlencode(path_dict)
             extra_results["whether_show_all"] = False
+
+        path_dict.clear()
+
         if "only_number" in query and query["only_number"] == "1":
             extra_results["number_keyword"] = "显示数字和生肖"
             path_dict.update(query)

@@ -4,6 +4,7 @@ from collections import OrderedDict
 class Rules(object):
     repeat_color = "#000000"
     repeat_font_color = "#FFFFFF"
+    init_rule_val = 0
 
     all_rules = OrderedDict([
         ("down", (1, "下", "#33FF00")),  # rule name: (value, description, color)   绿
