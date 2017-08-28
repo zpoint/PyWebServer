@@ -20,6 +20,7 @@ create table user_info(
    base_value INT DEFAULT 1,
    stock_times VARCHAR(1000),
    remote_valid BOOLEAN,
+   running_status BOOLEAN DEFAULT TRUE,
    force_login BOOLEAN DEFAULT TRUE,
    working_period VARCHAR(100),
    PRIMARY KEY ( userid ),

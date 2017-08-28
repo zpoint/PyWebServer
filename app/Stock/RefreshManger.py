@@ -15,7 +15,7 @@ from threading import Thread
 from ConfigureUtil import generate_connector
 from app.Stock.StockLogin import login
 from app.Stock.StockLogin import StockLogin
-from app.Stock.VerifyCodeUtil import verifyUtil
+from app.Stock.VerifyCodeUtil import VerifyUtilObject
 from app.Stock.Rules import rule
 from app.Stock.Config import stock_pool
 from app.Stock.DataBase import DataBaseUtil
@@ -24,6 +24,7 @@ from app.Stock.FunctionUtil import generate_cookie, get_cookie_dict, generate_he
 next_refresh_data = list()
 clear_flag = False
 buy_flag = False
+prev_date = None
 
 
 class RefreshMgr(Thread):
@@ -33,18 +34,22 @@ class RefreshMgr(Thread):
         self.loop = asyncio.new_event_loop()
         self.session = aiohttp.ClientSession(connector=generate_connector(loop=self.loop), loop=self.loop)
         self.db = DataBaseUtil()
+        self.verifyUtil = VerifyUtilObject(self.session)
 
     def run(self):
         self.loop.run_until_complete(self.refresh_main())
 
     async def refresh_person(self, user_info):
         await asyncio.sleep(random.randint(10, 15), loop=self.loop)  # every one sleep for different second
+        if isinstance(user_info["bind_cookie"], str):
+            user_info["bind_cookie"] = json.loads(user_info["bind_cookie"])
+
         url = user_info["prefer_host"] + "/sscbz3547472f_10355/klc/order/list/?&_=%s__autorefresh" % \
                                          (int(time.time() * 1000), )
         data = "action=ajax&play=bothSides&ball=&cat=13"
         headers = generate_headers()
         headers["Host"] = user_info["prefer_host"].replace("http://", "")
-        headers["Cookie"] = generate_cookie(json.loads(user_info["bind_cookie"]))
+        headers["Cookie"] = generate_cookie(user_info["bind_cookie"])
         headers["Content-Type"] = "application/x-www-form-urlencoded"
         headers["ajax"] = "true"
         headers["X-Requested-With"] = "XMLHttpRequest"
@@ -78,7 +83,7 @@ class RefreshMgr(Thread):
 
         success, cookie_dict = await login(r["prefer_host"], post_body["verify_code"], post_body["verify_value"],
                                            post_body["username"], post_body["password"], post_body["cid"],
-                                           post_body["cname"], r["bind_cookie"])
+                                           post_body["cname"], r["bind_cookie"], session=self.session)
 
         if not success:
             return False
@@ -88,16 +93,16 @@ class RefreshMgr(Thread):
             return True
 
     async def re_login_person(self, user_info, retry=5, curr_count=1):
-        await asyncio.sleep(random.randint(0, 3))  # avoid DDOS
-        img_byte = await StockLogin.get_img_byte(user_info)
+        await asyncio.sleep(random.randint(0, 3), loop=self.loop)  # avoid DDOS
+        img_byte = await StockLogin.get_img_byte(user_info, loop=self.loop, session=self.session)
         img_b64 = quote(base64.encodebytes(img_byte))
-        success, value = await verifyUtil.get_verify_value(img_b64)
+        success, value = await self.verifyUtil.get_verify_value(img_b64)
         if success:
             post_body = dict()
             post_body["verify_code"] = value
             verify_success = await self.re_login(user_info, post_body)
             if verify_success:
-                verifyUtil.save_img(img_byte, value)
+                self.verifyUtil.save_img(img_byte, value)
                 return verify_success
             else:
                 return self.re_login_person(retry, curr_count+1)
@@ -119,17 +124,23 @@ class RefreshMgr(Thread):
         base_val = user_info["base_value"]
 
         for date, first_ball in temp_pool.items():
+            vertical_index = 0
             for ball in first_ball:
+                if vertical_index >= 11:
+                    break
+                vertical_index += 1
+
                 if ball.weight == 0:
                     continue
                 if ball.weight > len(times_lst):
                     ball.weight %= len(times_lst)
                 buy_val = times_lst[ball.weight - 1] * base_val
-                if buy_val > 2:
+                if buy_val >= 2:
                     buy_list.append((date, ball.keyword, buy_val))
                 else:
-                    logging.error("Error buy val, username: %s, keyword: %s, date: %s" % (user_info["username"],
-                                                                                          ball.keyword, str(date)))
+                    logging.error("Error buy val: %d, username: %s, keyword: %s, date: %s" % (buy_val,
+                                                                                              user_info["username"],
+                                                                                              ball.keyword, str(date)))
             break
         if buy_list:
             await self.buy_with_val(user_info, buy_list)
@@ -138,7 +149,7 @@ class RefreshMgr(Thread):
         global next_refresh_data, buy_flag
         while True:
             try:
-                if buy_flag:
+                if buy_flag or (not next_refresh_data or datetime.now() > next_refresh_data[0]):
                     re_login_info = self.db.get_info_who_need_re_login()
                     if re_login_info:
                         tasks = [self.re_login_person(info) for info in re_login_info]
@@ -153,6 +164,7 @@ class RefreshMgr(Thread):
                     if buy_flag:
                         for each in info:
                             tasks.append(self.loop.create_task(self.buy_person(each)))
+                            tasks.append(asyncio.sleep(random.randint(10, 15), loop=self.loop))
                         buy_flag = False
 
                     else:
@@ -176,12 +188,16 @@ class RefreshMgr(Thread):
                     clear_flag = stock_pool.clear_out_date()
 
     async def get_info(self, user_info):
+        global clear_flag, prev_date, buy_flag
         now = datetime.now()
+        if isinstance(user_info["bind_cookie"], str):
+            user_info["bind_cookie"] = json.loads(user_info["bind_cookie"])
+
         url = user_info["prefer_host"] + "/sscbz3547472f_10355/pk/result/index"
         post_body = "date=" + now.strftime("%Y-%m-%d")
         headers = generate_headers()
         headers["Host"] = user_info["prefer_host"].replace("http://", "")
-        headers["Cookie"] = generate_cookie(json.loads(user_info["bind_cookie"]))
+        headers["Cookie"] = generate_cookie(user_info["bind_cookie"])
         headers["Content-Type"] = "application/x-www-form-urlencoded"
         headers["ajax"] = "true"
         headers["X-Requested-With"] = "XMLHttpRequest"
@@ -195,9 +211,7 @@ class RefreshMgr(Thread):
                     return False
                 json_obj = json.loads(result.group(0))
 
-                if json_obj["data"]["result"] and len(json_obj["data"]["result"]) > 2:
-                    global clear_flag
-
+                if json_obj["data"]["result"] and len(json_obj["data"]["result"]) >= 2:
                     if not json_obj["data"]["result"][0][2]:  # the latest date has empty result
                         return False
 
@@ -213,6 +227,11 @@ class RefreshMgr(Thread):
                     if next_refresh_data[0].day != curr_date.day:
                         clear_flag = True
                     logging.info("next_refresh_data " + str(next_refresh_data[0]))
+
+                if json_obj["data"]["result"] and len(json_obj["data"]["result"]) >= 1:
+                    if json_obj["data"]["result"][0][1] != prev_date:
+                        buy_flag = True
+                    prev_date = json_obj["data"]["result"][0][1]
 
                 json_obj["data"]["result"].reverse()  # sort before insert
 

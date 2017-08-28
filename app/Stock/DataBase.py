@@ -130,7 +130,7 @@ class DataBaseUtil(object):
 
     def update_cookie(self, r, cookie_dict):
         if r["bind_cookie"]:
-            original_cookie = json.loads(r["bind_cookie"])
+            original_cookie = json.loads(r["bind_cookie"]) if isinstance(r["bind_cookie"], str) else r["bind_cookie"]
             original_cookie.update(cookie_dict)
         else:
             original_cookie = cookie_dict
@@ -142,13 +142,25 @@ class DataBaseUtil(object):
         query = "SELECT * from user_info WHERE remote_valid=TRUE"
         self.cursor.execute(query)
         self.client.commit()
-        return self.cursor.fetchall()
+        results = self.cursor.fetchall()
+        for r in results:
+            if r["bind_cookie"]:
+                r["bind_cookie"] = json.loads(r["bind_cookie"])
+            if r["bind_param"]:
+                r["bind_param"] = json.loads(r["bind_param"])
+        return results
 
     def get_info_who_need_re_login(self):
         query = "SELECT * from user_info WHERE remote_valid=FALSE AND force_login=TRUE"
         self.cursor.execute(query)
         self.client.commit()
-        return self.cursor.fetchall()
+        results = self.cursor.fetchall()
+        for r in results:
+            if r["bind_cookie"]:
+                r["bind_cookie"] = json.loads(r["bind_cookie"])
+            if r["bind_param"]:
+                r["bind_param"] = json.loads(r["bind_param"])
+        return results
 
     def set_cookie_invalid(self, r):
         query = 'UPDATE user_info SET remote_valid=FALSE WHERE userid=%d' % (r["userid"], )

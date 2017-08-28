@@ -20,6 +20,8 @@ class Rules(object):
             while next_ball:
                 weight += 1
                 next_ball = paint_func(next_ball, True)
+                if next_ball and next_ball.keyword != ball.keyword:
+                    break
             ball.weight = weight
         else:
             ball.weight = 0

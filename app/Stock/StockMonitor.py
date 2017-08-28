@@ -107,7 +107,13 @@ class StockMonitor(View):
         html += """
             <form action="" method="post"> 
             """
-        html += await self.get_middle_content(r)
+        middle_content = await self.get_middle_content(r)
+
+        # in case return web response from middle
+        if type(middle_content) != str:
+            return middle_content
+
+        html += middle_content
         html += "</form>"
         if DBUtil.check_cookie_valid(r):
             html += self.refresh_script()
@@ -153,7 +159,10 @@ class StockMonitor(View):
             return ErrorReturn.invalid("您尚未绑定账号,请绑定后进行操作", main_path="/Stock/StockBind")
 
         html = await self.get_content_html(r)
-        return web.Response(text=html, headers=Headers.html_headers)
+        if type(html) != str:
+            return get_content_html
+        else:
+            return web.Response(text=html, headers=Headers.html_headers)
 
     async def post(self):
         r = DBUtil.valid_user(self.request.cookies, True)
@@ -187,7 +196,10 @@ class StockMonitor(View):
                 return ErrorReturn.invalid(reason, main_path=self.path)
             r = DBUtil.valid_user(self.request.cookies, True)
             html = await self.get_content_html(r)
-            return web.Response(text=html, headers=Headers.html_headers)
+            if type(html) != str:
+                return html
+            else:
+                return web.Response(text=html, headers=Headers.html_headers)
 
     @staticmethod
     def update_personal_val(post_body, r):

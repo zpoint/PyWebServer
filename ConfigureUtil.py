@@ -114,7 +114,6 @@ class ErrorReturn(object):
             """ % (title, title), headers=Headers.html_headers)
 
 
-
 class WebPageBase(object):
     @staticmethod
     def head(h1=None):
