@@ -12,21 +12,46 @@ class Rules(object):
         ("down_right", (1 << 2, "下右", "#0000FF")),  # 蓝
     ])
 
-    def down(self, ball):
+    @staticmethod
+    def set_recursive_val(paint_func, ball):
+        if ball.color:
+            weight = 0
+            next_ball = ball
+            while next_ball:
+                weight += 1
+                next_ball = paint_func(next_ball, True)
+            ball.weight = weight
+        else:
+            ball.weight = 0
+
+    def down(self, ball, return_next=False):
+        if return_next:
+            return ball.down
+
         color = self.all_rules[self.down.__name__][2]
         self.repeat_color = color
         if ball.down is not None and ball.keyword == ball.down.keyword:
             ball.color = self.repeat_color if ball.color else color
             ball.down.color = self.repeat_color if ball.down.color else color
 
-    def down_left(self, ball):
+    def down_left(self, ball, return_next=False):
+        if return_next:
+            if ball.down:
+                return ball.down.left
+            return ball.down
+
         color = self.all_rules[self.down_left.__name__][2]
         self.repeat_color = color
         if (ball.down is not None) and (ball.down.left is not None) and ball.down.keyword == ball.down.left.keyword:
             ball.down.color = self.repeat_color if ball.down.color else color
             ball.down.left.color = self.repeat_color if ball.down.left.color else color
 
-    def down_right(self, ball):
+    def down_right(self, ball, return_next=False):
+        if return_next:
+            if ball.down:
+                return ball.down.right
+            return ball.down
+
         color = self.all_rules[self.down_right.__name__][2]
         self.repeat_color = color
         if (ball.down is not None) and (ball.down.right is not None) and ball.down.keyword == ball.down.right.keyword:
@@ -46,10 +71,14 @@ class Rules(object):
         if not rule_func:
             return stock_pool
 
+        index = 0
         for date, first_ball in stock_pool.items():
             for ball in first_ball:
                 for paint_func in rule_func:
                     paint_func(ball)
+                    if index == 0:
+                        self.set_recursive_val(paint_func, ball)
+            index += 1
 
     def get_rule_val(self, rule_lst):
         val = 0

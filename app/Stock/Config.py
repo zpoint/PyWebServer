@@ -42,6 +42,9 @@ class Ball(object):
     def __iter__(self):
         return self.iter_horizontal()
 
+    def __bool__(self):
+        return True
+
 
 class StockPoll(object):
     def __init__(self):

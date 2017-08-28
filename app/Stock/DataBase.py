@@ -144,6 +144,12 @@ class DataBaseUtil(object):
         self.client.commit()
         return self.cursor.fetchall()
 
+    def get_info_who_need_re_login(self):
+        query = "SELECT * from user_info WHERE remote_valid=FALSE AND force_login=TRUE"
+        self.cursor.execute(query)
+        self.client.commit()
+        return self.cursor.fetchall()
+
     def set_cookie_invalid(self, r):
         query = 'UPDATE user_info SET remote_valid=FALSE WHERE userid=%d' % (r["userid"], )
         self.cursor.execute(query)

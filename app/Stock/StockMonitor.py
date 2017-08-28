@@ -11,11 +11,63 @@ from app.Stock.DataBase import DBUtil
 from app.Stock.Config import stock_pool
 from app.Stock.StockLogin import StockLogin, login
 from app.Stock.RefreshManger import next_refresh_data
+from app.Stock.VerifyCodeUtil import verifyUtil
 from ConfigureUtil import Headers, WebPageBase, ErrorReturn
 
 
 class StockMonitor(View):
     path = "/Stock/StockMonitor"
+
+    async def verify_code_to_user(self, r):
+        """
+        :param r: dictionary
+        :return: html body
+        """
+        img_byte = await StockLogin.get_img_byte(r)
+        body = "<h2 align=\"center\">您已在其他地方登录,　或已掉线, 请重新输入验证码进行登录</h2>"
+        body += """<table align="center">  
+                    <tr>      
+                    <td><img src="data:image/png;base64, %s"></td>
+                    <td><input type="text" name="verify_code" pattern="^[\da-zA-Z]{1,}$" title="请输入图片显示的验证码" /></td>
+                    </tr>
+                    </table>
+                    <table border=0 align="center">
+                    <tr><td><a href="%s">刷新验证码</a></td></tr>
+                    <tr><td><input type="submit" align="center" value="提交" /></td></tr>
+                    </table>""" % (quote(base64.encodebytes(img_byte)), self.path)
+        return body
+
+    async def verify_code_to_machine(self, r, retry=2, curr_count=1):
+        """
+        :param r: dictionary
+        :param retry: recursive retry time
+        :param curr_count: leave it, current counter
+        :return: whether success
+        """
+        img_byte = await StockLogin.get_img_byte(r)
+        img_b64 = quote(base64.encodebytes(img_byte))
+        success, value = await verifyUtil.get_verify_value(img_b64)
+        if success:
+            post_body = dict()
+            post_body["verify_code"] = value
+            verify_success, response_obj = await self.re_login(r, post_body, True)
+            if verify_success:
+                verifyUtil.save_img(img_byte, value)
+                return response_obj
+            else:
+                return self.verify_code_to_machine(retry, curr_count+1)
+
+        elif curr_count <= retry:
+            return await self.verify_code_to_machine(retry, curr_count+1)
+        else:
+            return False
+
+    async def get_verify_code_and_re_login(self, r):
+        result = await self.verify_code_to_machine(r)
+        if result is not False:
+            return result
+        else:
+            return await self.verify_code_to_user(r)
 
     @staticmethod
     def personal_head(r):
@@ -26,7 +78,7 @@ class StockMonitor(View):
         </table>
         """ % (r["username"], r["bind_username"], "线路", r["expired"].strftime("%Y-%m-%d"), r["inviting_code"].upper())
 
-    async def re_login(self, r, post_body):
+    async def re_login(self, r, post_body, return_flag=False):
         post_body.update(r["bind_param"])
         post_body["username"] = r["bind_username"]
         post_body["password"] = r["bind_password"]
@@ -40,12 +92,14 @@ class StockMonitor(View):
                                            post_body["cname"], r["bind_cookie"])
 
         if not success:
-            return ErrorReturn.html(cookie_dict, self.path)
+            return_obj = ErrorReturn.html(cookie_dict, self.path)
+            return (False, return_obj) if return_flag else return_obj
         else:
             DBUtil.update_param(r, {}, cookie_dict, False)
             DBUtil.set_cookie_valid(r)
             html = await self.get_content_html(r)
-            return web.Response(text=html, headers=Headers.html_headers)
+            return_obj = web.Response(text=html, headers=Headers.html_headers)
+            return (True, return_obj) if return_flag else return_obj
 
     async def get_content_html(self, r):
         html = WebPageBase.head("监控系统")
@@ -169,42 +223,30 @@ class StockMonitor(View):
 
     async def get_middle_content(self, r):
         if not DBUtil.check_cookie_valid(r):
-            img_byte = await StockLogin.get_img_byte(r)
-            body = "<h2 align=\"center\">您已在其他地方登录,　或已掉线, 请重新输入验证码进行登录</h2>"
-            body += """<table align="center">  
-            <tr>      
-            <td><img src="data:image/png;base64, %s"></td>
-            <td><input type="text" name="verify_code" pattern="^[\da-zA-Z]{1,}$" title="请输入图片显示的验证码" /></td>
-            </tr>
-            </table>
-            <table border=0 align="center">
-            <tr><td><a href="%s">刷新验证码</a></td></tr>
-            <tr><td><input type="submit" align="center" value="提交" /></td></tr>
-            </table>""" % (quote(base64.encodebytes(img_byte)), self.path)
-            return body
-        else:
-            rule_table, row_count = self.get_rule_table(r)
-            extra_results = self.get_show_all_info(row_count)
-            if extra_results["whether_show_all"]:
-                row_count = 0
-            return """
-            <table align="center">
-            <tr><td>%s</td>
-                <td>%s</td>
-            </tr>
-            </table>
-            <table border=0 align="center">
-            <tr>
-            <td><input type="submit" align="center" value="提交" /></td>
-            <td><a href="%s" align="center">刷新</a></td>
-            <td><a href="%s" align="center">%s</a></td>
-            <td><a href="%s" align="center">%s</a></td>
-            </tr>
-            </table>
-            """ % (rule_table, self.get_stock_info_table(r, row_count, extra_results),
-                   self.path + (("?" + urlencode(self.request.query)) if self.request.query else ""),
-                   extra_results["show_all_path"], extra_results["show_all_keyword"],
-                   extra_results["only_number_path"], extra_results["number_keyword"])
+            return await self.get_verify_code_and_re_login(r)
+
+        rule_table, row_count = self.get_rule_table(r)
+        extra_results = self.get_show_all_info(row_count)
+        if extra_results["whether_show_all"]:
+            row_count = 0
+        return """
+        <table align="center">
+        <tr><td>%s</td>
+            <td>%s</td>
+        </tr>
+        </table>
+        <table border=0 align="center">
+        <tr>
+        <td><input type="submit" align="center" value="提交" /></td>
+        <td><a href="%s" align="center">刷新</a></td>
+        <td><a href="%s" align="center">%s</a></td>
+        <td><a href="%s" align="center">%s</a></td>
+        </tr>
+        </table>
+        """ % (rule_table, self.get_stock_info_table(r, row_count, extra_results),
+               self.path + (("?" + urlencode(self.request.query)) if self.request.query else ""),
+               extra_results["show_all_path"], extra_results["show_all_keyword"],
+               extra_results["only_number_path"], extra_results["number_keyword"])
 
     def get_show_all_info(self, row_count):
         query = self.request.query
