@@ -18,6 +18,8 @@ create table user_info(
    inviting_code VARCHAR(100),
    rules BIGINT DEFAULT 0,
    base_value INT DEFAULT 1,
+   buy_step INT DEFAULT 1,
+   buy_table VARCHAR(10000),
    stock_times VARCHAR(1000),
    remote_valid BOOLEAN,
    running_status BOOLEAN DEFAULT TRUE,

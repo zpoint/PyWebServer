@@ -24,7 +24,8 @@ def get_inviting_code(username, password):
 
 
 def generate_cookie(query_dict):
-    return hashlib.md5((str(query_dict) + str(random.randint(0, 10))).encode("utf8")).hexdigest()
+    return hashlib.md5((str(query_dict) + ":".join(str(random.randint(0, 100)) for _ in range(100))).
+                       encode("utf8")).hexdigest()
 
 
 class DataBaseUtil(object):
@@ -65,12 +66,18 @@ class DataBaseUtil(object):
         r = self.cursor.execute(query)
         if r == 0:
             return False
+
         r = self.cursor.fetchone()
+
+        if r["cookie"] != cookie["StockID"]:
+            return False
 
         if r["bind_cookie"]:
             r["bind_cookie"] = json.loads(r["bind_cookie"])
         if r["bind_param"]:
             r["bind_param"] = json.loads(r["bind_param"])
+        if r["buy_table"]:
+            r["buy_table"] = json.loads(r["buy_table"])
 
         if return_key is True:  # return all info
             return r
@@ -148,6 +155,8 @@ class DataBaseUtil(object):
                 r["bind_cookie"] = json.loads(r["bind_cookie"])
             if r["bind_param"]:
                 r["bind_param"] = json.loads(r["bind_param"])
+            if r["buy_table"]:
+                r["buy_table"] = json.loads(r["buy_table"])
         return results
 
     def get_info_who_need_re_login(self):
@@ -160,6 +169,8 @@ class DataBaseUtil(object):
                 r["bind_cookie"] = json.loads(r["bind_cookie"])
             if r["bind_param"]:
                 r["bind_param"] = json.loads(r["bind_param"])
+            if r["buy_table"]:
+                r["buy_table"] = json.loads(r["buy_table"])
         return results
 
     def set_cookie_invalid(self, r):
@@ -178,13 +189,33 @@ class DataBaseUtil(object):
         self.client.commit()
         return self.cursor.fetchone()["remote_valid"]
 
-    def update_base(self, r, new_rule_val, new_base_val, new_stock_val, new_period):
+    def update_base(self, r, new_rule_val, new_base_val, new_stock_val, new_period, new_status):
         if r["rules"] == new_rule_val and r["base_value"] == new_base_val and r["stock_times"] == new_stock_val and \
-                        r["working_period"] == new_period:
+                        r["working_period"] == new_period and r["running_status"] == new_status:
             return
-        query = 'UPDATE user_info SET rules=%d, base_value=%d, stock_times="%s", working_period="%s" WHERE ' \
-                'userid="%d"' % (new_rule_val, new_base_val, new_stock_val, new_period, r["userid"])
+        query = 'UPDATE user_info SET rules=%d, base_value=%d, stock_times="%s", working_period="%s", running_status=' \
+                '%s WHERE userid=%d' % (new_rule_val, new_base_val, new_stock_val,
+                                        new_period, new_status, r["userid"])
 
+        self.cursor.execute(query)
+        self.client.commit()
+        r["rules"] = new_rule_val
+        r["base_value"] = new_base_val
+        r["stock_times"] = new_stock_val
+        r["working_period"] = new_period
+        r["running_status"] = new_status
+
+    def update_buying_table(self, r, json_obj):
+        date_now_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        for i in json_obj["data"]["user"]["new_orders"]:
+            i[-1] = date_now_str + " " + i[-1]
+
+        query = "UPDATE user_info SET buy_table='%s' WHERE userid=%d" % (json.dumps(json_obj), r["userid"])
+        self.cursor.execute(query)
+        self.client.commit()
+
+    def update_buy_step(self, r):
+        query = 'UPDATE user_info SET buy_step=%d WHERE userid=%d' % (int(r["buy_step"]), r["userid"])
         self.cursor.execute(query)
         self.client.commit()
 

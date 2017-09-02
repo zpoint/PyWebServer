@@ -22,7 +22,7 @@ class Rules(object):
                 next_ball = paint_func(next_ball, True)
                 if next_ball and next_ball.keyword != ball.keyword:
                     break
-            ball.weight = weight
+            ball.weight = weight - 1 if weight > 0 else weight
         else:
             ball.weight = 0
 

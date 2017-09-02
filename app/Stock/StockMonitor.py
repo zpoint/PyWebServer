@@ -4,7 +4,7 @@ import random
 from aiohttp import web
 from aiohttp.web import View
 from urllib.parse import quote, urlencode
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.Stock.Rules import rule
 from app.Stock.DataBase import DBUtil
@@ -55,15 +55,20 @@ class StockMonitor(View):
                 verifyUtil.save_img(img_byte, value)
                 return response_obj
             else:
-                return self.verify_code_to_machine(retry, curr_count+1)
+                return await self.verify_code_to_machine(r, retry, curr_count+1)
 
         elif curr_count <= retry:
-            return await self.verify_code_to_machine(retry, curr_count+1)
+            return await self.verify_code_to_machine(r, retry, curr_count+1)
         else:
-            return False
+            return web.Response(text="登录失败请稍后再试", headers=Headers.html_headers)
 
     async def get_verify_code_and_re_login(self, r):
-        result = await self.verify_code_to_machine(r)
+        try:
+            result = await self.verify_code_to_machine(r)
+        except ValueError:
+            # verify code Error
+            return await self.verify_code_to_user(r)
+
         if result is not False:
             return result
         else:
@@ -122,13 +127,17 @@ class StockMonitor(View):
 
     def refresh_script(self):
         if next_refresh_data:
-            now = datetime.now()
-            if now > next_refresh_data[0]:
+            if self.need_refresh_fast:
                 next_seconds = random.randint(15, 30)
             else:
-                next_seconds = (next_refresh_data[0] - now).seconds + random.randint(15, 30)
+                now = datetime.now()
+                if now > next_refresh_data[0]:
+                    next_seconds = random.randint(15, 30)
+                else:
+                    next_seconds = (next_refresh_data[0] - now).seconds + random.randint(15, 30)
         else:
             next_seconds = random.randint(15, 30)
+
 
         body = """
             <table align="center">
@@ -160,7 +169,7 @@ class StockMonitor(View):
 
         html = await self.get_content_html(r)
         if type(html) != str:
-            return get_content_html
+            return html
         else:
             return web.Response(text=html, headers=Headers.html_headers)
 
@@ -187,7 +196,7 @@ class StockMonitor(View):
         if "verify_code" in post_body:
             return await self.re_login(r, post_body)
         else:
-            for key in ("base_value", "stock_times", "working_period"):
+            for key in ("base_value", "stock_times", "working_period", "beginStatus"):
                 if key not in post_body:
                     return ErrorReturn.invalid("非法访问", main_path=self.path)
 
@@ -230,7 +239,15 @@ class StockMonitor(View):
             return False, "进行自动购买的时段需同 00-24 格式一致, 两边均为整数"
         if int(left) > 24 or int(left) < 0 or int(right) > 24 or int(right) < 0:
             return False, "进行自动购买的时段需同 00-24 格式一致, 时段需在24小时范围内"
-        DBUtil.update_base(r, new_rule_val, new_base_val, new_stock_val, new_period)
+
+        if post_body["beginStatus"] == "beginMonitor":
+            new_status = True
+        elif post_body["beginStatus"] == "stopMonitor":
+            new_status = False
+        else:
+            return False, "非法选项"
+
+        DBUtil.update_base(r, new_rule_val, new_base_val, new_stock_val, new_period, new_status)
         return True, "success"
 
     async def get_middle_content(self, r):
@@ -241,9 +258,11 @@ class StockMonitor(View):
         extra_results = self.get_show_all_info(row_count)
         if extra_results["whether_show_all"]:
             row_count = 0
+        stock_table = self.get_stock_info_table(r, row_count, extra_results)
         return """
         <table align="center">
         <tr><td>%s</td>
+            <td>%s</td>
             <td>%s</td>
         </tr>
         </table>
@@ -255,10 +274,50 @@ class StockMonitor(View):
         <td><a href="%s" align="center">%s</a></td>
         </tr>
         </table>
-        """ % (rule_table, self.get_stock_info_table(r, row_count, extra_results),
+        """ % (self.get_buying_table(r, row_count), rule_table, stock_table,
                self.path + (("?" + urlencode(self.request.query)) if self.request.query else ""),
                extra_results["show_all_path"], extra_results["show_all_keyword"],
                extra_results["only_number_path"], extra_results["number_keyword"])
+
+    def get_buying_table(self, user_info, row_count):
+        self.need_refresh_fast = False
+        body = "<table border=1>"
+        if not next_refresh_data or \
+                (not user_info["buy_table"] or not user_info["buy_table"]["data"]["user"]["new_orders"] or
+                    datetime.strptime(user_info["buy_table"]["data"]["user"]["new_orders"][0][-1], "%Y-%m-%d %H:%M:%S")
+                    < next_refresh_data[0] - timedelta(minutes=5)):
+            body += "<caption><h3>还未有投注结果</h3></caption>"
+            body += '<tr><td></td><td><input type="text" name="test", value="刷新页面,当有投注结果时会显示" ' \
+                    'disabled="disabled" border=0 /></td></tr>\n'
+
+            for key, first_ball in self.temp_pool.items():
+                index = 0
+                for ball in first_ball:
+                    if ball.color:
+                        self.need_refresh_fast = True
+                        break
+                    index += 1
+                    if index >= 11:
+                        break
+                break
+        else:
+            body += "<caption><h3>本期投注结果</h3></caption>"
+            body += "<tr><td>信用额度</td><td>%s</td><td>剩余额度</td><td>%s</td>" % \
+                    (user_info["buy_table"]["data"]["user"]["credit"],
+                     user_info["buy_table"]["data"]["user"]["re_credit"])
+
+            body += "<tr><td>注单</td><td>赔率</td><td>金额</td><td>时间</td></td></tr>"
+            current_row_count = 2
+            for each in user_info["buy_table"]["data"]["user"]["new_orders"]:
+                current_row_count += 1
+                body += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % \
+                        (each[0].replace("u", "\\u").encode("utf8").decode("unicode-escape"), str(each[1]),
+                         str(each[2]), each[3])
+                # each 第四名 2, 9.916, 2, 2017-08-30 22:22:51
+            for each in range(row_count - current_row_count):
+                body += "<tr><td>空</td><td>空</td><td>空</td><td>空</td></tr>"
+        body += "</table>"
+        return body
 
     def get_show_all_info(self, row_count):
         query = self.request.query
@@ -313,8 +372,16 @@ class StockMonitor(View):
         body += '<tr><td>时段</td><td><input type="text" name="working_period", value="%s", pattern="^\d\d-\d\d$", ' \
                 'title="进行自动购买的时段, 起始小时-结束小时, 00-24为全天, 00-00为不进行购买, 08-12为早上8点至中午12点" />' \
                 '</td></tr>' % (r["working_period"], )
+
+        body += '<tr><td>状态</td><td><select name="beginStatus">'
+        if r["running_status"]:
+            body += '<option value="beginMonitor", selected="selected">开启自动购买(选中)</option>' \
+                    '<option value="stopMonitor">停止自动购买</option>'
+        else:
+            body += '<option value="beginMonitor">开启自动购买</option>' \
+                    '<option value="stopMonitor", selected="selected">停止自动购买(选中)</option>'
         body += "</table>"
-        return body, row_count + 3
+        return body, row_count + 4
 
     def get_stock_info_table(self, r, row_count, extra_info):
         if "whether_show_all" in extra_info and extra_info["whether_show_all"]:
@@ -329,9 +396,9 @@ class StockMonitor(View):
             body += "<caption><h3>今日结果</h3></caption>"
 
         count = 1
-        temp_pool = copy.deepcopy(stock_pool)
-        rule.paint(r, temp_pool)
-        for date, first_ball in temp_pool.items():
+        self.temp_pool = copy.deepcopy(stock_pool)
+        rule.paint(r, self.temp_pool)
+        for date, first_ball in self.temp_pool.items():
             body += "<tr><td>%s</td>" % (date.strftime("%H:%M"), )
             ball_count = 0
             for ball in first_ball:

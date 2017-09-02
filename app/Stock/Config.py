@@ -88,7 +88,7 @@ class StockPoll(object):
     def clear_out_date(self):
         now = datetime.datetime.now()
         del_keys = list()
-        for key in list(self.bucket.values()):
+        for key in list(self.bucket.keys()):
             if now.day != key.day:
                 del_keys.append(key)
         for key in del_keys:
