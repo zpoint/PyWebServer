@@ -48,8 +48,7 @@ class DataBaseUtil(object):
             cookie = generate_cookie(r)
             query = 'UPDATE user_info SET cookie="%s", ip="%s", last_active_time=%s WHERE userid="%d"' % \
                     (cookie, extend_ip(r["ip"], ip), "now()", r["userid"])
-            self.cursor.execute(query)
-            self.client.commit()
+            self.execute_and_commit(query)
             return True, cookie
         else:  # interrupt by other concurrency request
             retry += 1
@@ -63,7 +62,7 @@ class DataBaseUtil(object):
             return False
 
         query = 'SELECT * FROM user_info WHERE cookie="%s"' % (cookie["StockID"], )
-        r = self.cursor.execute(query)
+        r = self.execute(query)
         if r == 0:
             return False
 
@@ -86,8 +85,7 @@ class DataBaseUtil(object):
     def bind(self, r, post_body):
         query = 'UPDATE user_info SET bind_username="%s", bind_password="%s", remote_valid=TRUE  WHERE userid=%d' % \
                 (post_body["username"], post_body["password"], r["userid"])
-        self.cursor.execute(query)
-        self.client.commit()
+        self.execute_and_commit(query)
 
     def create_user(self, username, password, invite_code, ip):
         if not username:
@@ -107,12 +105,12 @@ class DataBaseUtil(object):
                  strftime("%Y-%m-%d %H:%M:%S"), invite_code, config["remote"]["prefer_host"],
                  get_inviting_code(username, password), "0-0-0-0-0", "00-24")
         try:
-            self.cursor.execute(query)
+            self.execute(query)
         except _mysql_exceptions.IntegrityError as e:
             logging.info(str(e))
             return False, "该用户名已经被注册"
 
-        self.client.commit()
+        self.commit()
         return True, "注册成功, 请登录"
 
     def update_param(self, r, param_dict, cookie_dict, commit=True):
@@ -131,9 +129,9 @@ class DataBaseUtil(object):
 
         query = "UPDATE user_info SET bind_param='%s', bind_cookie='%s' WHERE userid=%d" % \
                 (json.dumps(param_dict), json.dumps(cookie_dict), r["userid"])
-        self.cursor.execute(query)
+        self.execute(query)
         if commit:
-            self.client.commit()
+            self.commit()
 
     def update_cookie(self, r, cookie_dict):
         if r["bind_cookie"]:
@@ -142,13 +140,11 @@ class DataBaseUtil(object):
         else:
             original_cookie = cookie_dict
         query = "UPDATE user_info SET bind_cookie='%s' WHERE userid=%d" % (json.dumps(original_cookie), r["userid"])
-        self.cursor.execute(query)
-        self.client.commit()
+        self.execute_and_commit(query)
 
     def get_info_whose_cookie_is_valid(self):
         query = "SELECT * from user_info WHERE remote_valid=TRUE"
-        self.cursor.execute(query)
-        self.client.commit()
+        self.execute_and_commit(query)
         results = self.cursor.fetchall()
         for r in results:
             if r["bind_cookie"]:
@@ -161,8 +157,7 @@ class DataBaseUtil(object):
 
     def get_info_who_need_re_login(self):
         query = "SELECT * from user_info WHERE remote_valid=FALSE AND force_login=TRUE"
-        self.cursor.execute(query)
-        self.client.commit()
+        self.execute_and_commit(query)
         results = self.cursor.fetchall()
         for r in results:
             if r["bind_cookie"]:
@@ -175,18 +170,15 @@ class DataBaseUtil(object):
 
     def set_cookie_invalid(self, r):
         query = 'UPDATE user_info SET remote_valid=FALSE WHERE userid=%d' % (r["userid"], )
-        self.cursor.execute(query)
-        self.client.commit()
+        self.execute_and_commit(query)
 
     def set_cookie_valid(self, r):
         query = 'UPDATE user_info SET remote_valid=TRUE WHERE userid=%d' % (r["userid"], )
-        self.cursor.execute(query)
-        self.client.commit()
+        self.execute_and_commit(query)
 
     def check_cookie_valid(self, r):
         query = "SELECT remote_valid FROM user_info WHERE userid=%d" % (r["userid"], )
-        self.cursor.execute(query)
-        self.client.commit()
+        self.execute_and_commit(query)
         return self.cursor.fetchone()["remote_valid"]
 
     def update_base(self, r, new_rule_val, new_base_val, new_stock_val, new_period, new_status):
@@ -197,8 +189,7 @@ class DataBaseUtil(object):
                 '%s WHERE userid=%d' % (new_rule_val, new_base_val, new_stock_val,
                                         new_period, new_status, r["userid"])
 
-        self.cursor.execute(query)
-        self.client.commit()
+        self.execute_and_commit(query)
         r["rules"] = new_rule_val
         r["base_value"] = new_base_val
         r["stock_times"] = new_stock_val
@@ -211,12 +202,33 @@ class DataBaseUtil(object):
             i[-1] = date_now_str + " " + i[-1]
 
         query = "UPDATE user_info SET buy_table='%s' WHERE userid=%d" % (json.dumps(json_obj), r["userid"])
-        self.cursor.execute(query)
-        self.client.commit()
+        self.execute_and_commit(query)
 
     def update_buy_step(self, r):
         query = 'UPDATE user_info SET buy_step=%d WHERE userid=%d' % (int(r["buy_step"]), r["userid"])
-        self.cursor.execute(query)
-        self.client.commit()
+        self.execute_and_commit(query)
+
+    def execute_and_commit(self, query):
+        try:
+            self.cursor.execute(query)
+            self.client.commit()
+        except (AttributeError, MySQLdb.OperationalError):
+            self.__init__()
+            self.cursor.execute(query)
+            self.client.commit()
+
+    def execute(self, query):
+        try:
+            return self.cursor.execute(query)
+        except (AttributeError, MySQLdb.OperationalError):
+            self.__init__()
+            return self.cursor.execute(query)
+
+    def commit(self):
+        try:
+            self.client.commit()
+        except (AttributeError, MySQLdb.OperationalError):
+            self.__init__()
+            self.client.commit()
 
 DBUtil = DataBaseUtil()
