@@ -21,6 +21,7 @@ class Rules(object):
                 row_colored = False
                 weight += 1
                 next_row_ball = ball.down
+                ball = next_row_ball
                 if not next_row_ball:
                     break
                 left = right = next_row_ball
