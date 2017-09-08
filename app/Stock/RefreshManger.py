@@ -97,7 +97,7 @@ class RefreshMgr(Thread):
         await asyncio.sleep(random.randint(0, 3), loop=self.loop)  # avoid DDOS
         try:
             img_byte = await StockLogin.get_img_byte(user_info, loop=self.loop, session=self.session)
-        except ValueError:
+        except (ValueError, IndexError):
             if curr_count <= retry:
                 return await self.re_login_person(user_info, retry, curr_count + 1)
             else:
@@ -168,7 +168,7 @@ class RefreshMgr(Thread):
                     return await self.buy_with_val(user_info, buy_list, retry, current+1)
 
         logging.info("Success buying: %s, username: %s" % (param["t"], user_info["username"]))
-        self.db.update_buying_table(user_info, json_obj)
+        self.db.update_buying_table(user_info, json_obj, buy_list)
         cookie_dict = get_cookie_dict(resp.cookies)
         if cookie_dict:
             self.db.update_cookie(user_info, cookie_dict)
@@ -182,6 +182,19 @@ class RefreshMgr(Thread):
         rule.paint(user_info, temp_pool)
         times_lst = [float(i) for i in user_info["stock_times"].split("-")]
         base_val = user_info["base_value"]
+        prev_buy_dict = dict()
+        for item in user_info["cargo"]:
+            prev_buy_dict[int(item[0])] = item[1]
+
+        for date, first_ball in temp_pool.items():
+            vertical_index = -1
+            for ball in first_ball:
+                vertical_index += 1
+                if vertical_index >= 10:
+                    break
+                if vertical_index in prev_buy_dict and prev_buy_dict[vertical_index] == ball.keyword:  # bingo
+                    user_info["buy_cursor"] = 0
+                    self.db.update_buy_step(user_info)
 
         for date, first_ball in temp_pool.items():
             vertical_index = -1
@@ -193,9 +206,11 @@ class RefreshMgr(Thread):
                     return True
                 if ball.weight == 0:
                     continue
-                if ball.weight > len(times_lst):
-                    ball.weight %= len(times_lst)
-                buy_val = times_lst[ball.weight - 1] * base_val
+                # if ball.weight > len(times_lst):
+                #    ball.weight %= len(times_lst)
+                if user_info["buy_cursor"] >= len(times_lst):
+                    user_info["buy_cursor"] %= len(times_lst)
+                buy_val = times_lst[user_info["buy_cursor"]] * base_val
                 if buy_val >= 2:
                     buy_list.append(("%03d" % (vertical_index, ), ball.keyword,
                                      next_buying_pool["%03d" % (vertical_index, )][str(ball.keyword)],
@@ -208,6 +223,8 @@ class RefreshMgr(Thread):
 
         if buy_list:
             await self.buy_with_val(user_info, buy_list)
+            user_info["buy_cursor"] += 1
+            self.db.update_buy_step(user_info)
 
     async def re_login_all(self):
         re_login_info = self.db.get_info_who_need_re_login()

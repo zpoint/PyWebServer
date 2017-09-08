@@ -25,6 +25,8 @@ create table user_info(
    running_status BOOLEAN DEFAULT TRUE,
    force_login BOOLEAN DEFAULT TRUE,
    working_period VARCHAR(100),
+   cargo VARCHAR(1000),
+   buy_cursor INT DEFAULT 0,
    PRIMARY KEY ( userid ),
    UNIQUE (username),
    UNIQUE (bind_username)

@@ -366,9 +366,15 @@ class StockMonitor(View):
 
         body += '<tr><td>基数</td><td><input type="text" name="base_value", value="%s", pattern="^(\d){1,}.?(\d+)?$", ' \
                 'title="基数, 单位人民币, 请看倍投说明" /></td></tr>' % (r["base_value"], )
+        values = r["stock_times"].split("-")
+        if len(values) <= r["buy_cursor"]:
+            buy_cursor = r["buy_cursor"] % len(values)
+        else:
+            buy_cursor = r["buy_cursor"]
+
         body += '<tr><td>倍投</td><td><input type="text" name="stock_times", value="%s" pattern="^(\d-){1,}\d$" ' \
-                'title="如 0-0-0-1-6 为连续四次符合规则, 第4次设置为基数的1倍, 第5次设置为基数的六倍" /></td></tr>' % \
-                (r["stock_times"], )
+                'title="如 0-0-0-1-6 为连续四次符合规则, 第4次设置为基数的1倍, 第5次设置为基数的六倍, 当前在第%d个, 为%s倍"' \
+                ' /></td></tr>' % (r["stock_times"], buy_cursor + 1, str(values[buy_cursor]))
         body += '<tr><td>时段</td><td><input type="text" name="working_period", value="%s", pattern="^\d\d-\d\d$", ' \
                 'title="进行自动购买的时段, 起始小时-结束小时, 00-24为全天, 00-00为不进行购买, 08-12为早上8点至中午12点" />' \
                 '</td></tr>' % (r["working_period"], )

@@ -79,6 +79,8 @@ class DataBaseUtil(object):
             r["bind_param"] = json.loads(r["bind_param"])
         if r["buy_table"]:
             r["buy_table"] = json.loads(r["buy_table"])
+        if r["cargo"]:
+            r["cargo"] = json.loads(r["cargo"])
 
         if return_key is True:  # return all info
             return r
@@ -155,6 +157,8 @@ class DataBaseUtil(object):
                 r["bind_param"] = json.loads(r["bind_param"])
             if r["buy_table"]:
                 r["buy_table"] = json.loads(r["buy_table"])
+            if r["cargo"]:
+                r["cargo"] = json.loads(r["cargo"])
         return results
 
     def get_info_who_need_re_login(self):
@@ -168,6 +172,8 @@ class DataBaseUtil(object):
                 r["bind_param"] = json.loads(r["bind_param"])
             if r["buy_table"]:
                 r["buy_table"] = json.loads(r["buy_table"])
+            if r["cargo"]:
+                r["cargo"] = json.loads(r["cargo"])
         return results
 
     def set_cookie_invalid(self, r):
@@ -198,16 +204,22 @@ class DataBaseUtil(object):
         r["working_period"] = new_period
         r["running_status"] = new_status
 
-    def update_buying_table(self, r, json_obj):
+    def update_buying_table(self, r, json_obj, cargo):
         date_now_str = datetime.datetime.now().strftime("%Y-%m-%d")
         for i in json_obj["data"]["user"]["new_orders"]:
             i[-1] = date_now_str + " " + i[-1]
 
         query = "UPDATE user_info SET buy_table='%s' WHERE userid=%d" % (json.dumps(json_obj), r["userid"])
+        self.execute(query)
+        query = "UPDATE user_info SET cargo='%s' WHERE userid=%d" % (json.dumps(cargo), r["userid"])
         self.execute_and_commit(query)
 
     def update_buy_step(self, r):
         query = 'UPDATE user_info SET buy_step=%d WHERE userid=%d' % (int(r["buy_step"]), r["userid"])
+        self.execute_and_commit(query)
+
+    def update_buy_cursor(self, r):
+        query = 'UPDATE user_info SET buy_cursor=%d WHERE userid=%d' % (int(r["buy_cursor"]), r["userid"])
         self.execute_and_commit(query)
 
     def execute_and_commit(self, query):
