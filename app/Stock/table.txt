@@ -27,7 +27,7 @@ create table user_info(
    working_period VARCHAR(100),
    PRIMARY KEY ( userid ),
    UNIQUE (username),
-   UNIQUE (bind_password)
+   UNIQUE (bind_username)
 );
 
 SELECT userid, username, password, bind_username, bind_password, last_active_time, ip, expired, previous_page, prefer_host, invite_code, inviting_code, remote_valid from user_info;

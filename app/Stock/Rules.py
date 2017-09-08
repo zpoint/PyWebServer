@@ -15,13 +15,26 @@ class Rules(object):
     @staticmethod
     def set_recursive_val(paint_func, ball):
         if ball.color:
+            row_colored = True
             weight = 0
-            next_ball = ball
-            while next_ball:
+            while row_colored:
+                row_colored = False
                 weight += 1
-                next_ball = paint_func(next_ball, True)
-                if next_ball and next_ball.keyword != ball.keyword:
+                next_row_ball = ball.down
+                if not next_row_ball:
                     break
+                left = right = next_row_ball
+                while left:
+                    if left.color:
+                        row_colored = True
+                        break
+                    left = left.left
+                while right:
+                    if right.color:
+                        row_colored = True
+                        break
+                    right = right.right
+
             ball.weight = weight - 1 if weight > 0 else weight
         else:
             ball.weight = 0
