@@ -14,7 +14,7 @@ class Rules(object):
 
     @staticmethod
     def set_recursive_val(paint_func, ball):
-        if ball.color:
+        if ball.color and ball.keyword.isdigit():
             row_colored = True
             weight = 0
             while row_colored:
@@ -26,12 +26,12 @@ class Rules(object):
                     break
                 left = right = next_row_ball
                 while left:
-                    if left.color:
+                    if left.color and left.keyword.isdigit():
                         row_colored = True
                         break
                     left = left.left
                 while right:
-                    if right.color:
+                    if right.color and right.keyword.isdigit():
                         row_colored = True
                         break
                     right = right.right
