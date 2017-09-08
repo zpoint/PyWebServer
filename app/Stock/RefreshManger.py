@@ -226,6 +226,9 @@ class RefreshMgr(Thread):
             await self.buy_with_val(user_info, buy_list)
             user_info["buy_cursor"] += 1
             self.db.update_buy_step(user_info)
+        else:
+            user_info["buy_cursor"] = 0
+            self.db.update_buy_step(user_info)
 
     async def re_login_all(self):
         re_login_info = self.db.get_info_who_need_re_login()
