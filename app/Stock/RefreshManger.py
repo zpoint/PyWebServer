@@ -196,6 +196,7 @@ class RefreshMgr(Thread):
                 if vertical_index in prev_buy_dict and prev_buy_dict[vertical_index] == ball.keyword:  # bingo
                     user_info["buy_cursor"] = 0
                     self.db.update_buy_step(user_info)
+            break
 
         for date, first_ball in temp_pool.items():
             vertical_index = -1
