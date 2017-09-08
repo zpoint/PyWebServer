@@ -17,11 +17,11 @@ class Rules(object):
         if ball.color and ball.keyword.isdigit():
             row_colored = True
             weight = 0
+            current_ball = ball
             while row_colored:
                 row_colored = False
                 weight += 1
-                next_row_ball = ball.down
-                ball = next_row_ball
+                next_row_ball = current_ball.down
                 if not next_row_ball:
                     break
                 left = right = next_row_ball
@@ -35,6 +35,8 @@ class Rules(object):
                         row_colored = True
                         break
                     right = right.right
+                    
+                current_ball = next_row_ball
 
             ball.weight = weight - 1 if weight > 0 else weight
         else:
