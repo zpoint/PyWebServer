@@ -38,7 +38,8 @@ class DataBaseUtil(object):
 
     def get_and_reset_cookie(self, username, password, ip, retry=0):
         query = 'SELECT * FROM user_info WHERE username="%s"' % (username, )
-        r = self.cursor.execute(query)
+        r = self.execute(query)
+        self.commit()
         if r == 0:
             return False, "该用户不存在"
         r = self.cursor.fetchone()
@@ -63,6 +64,7 @@ class DataBaseUtil(object):
 
         query = 'SELECT * FROM user_info WHERE cookie="%s"' % (cookie["StockID"], )
         r = self.execute(query)
+        self.commit()
         if r == 0:
             return False
 
@@ -105,7 +107,7 @@ class DataBaseUtil(object):
                  strftime("%Y-%m-%d %H:%M:%S"), invite_code, config["remote"]["prefer_host"],
                  get_inviting_code(username, password), "0-0-0-0-0", "00-24")
         try:
-            self.execute(query)
+            self.execute_and_commit(query)
         except _mysql_exceptions.IntegrityError as e:
             logging.info(str(e))
             return False, "该用户名已经被注册"
@@ -129,7 +131,7 @@ class DataBaseUtil(object):
 
         query = "UPDATE user_info SET bind_param='%s', bind_cookie='%s' WHERE userid=%d" % \
                 (json.dumps(param_dict), json.dumps(cookie_dict), r["userid"])
-        self.execute(query)
+        self.execute_and_commit(query)
         if commit:
             self.commit()
 
