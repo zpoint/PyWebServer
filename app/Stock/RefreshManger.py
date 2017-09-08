@@ -183,8 +183,9 @@ class RefreshMgr(Thread):
         times_lst = [float(i) for i in user_info["stock_times"].split("-")]
         base_val = user_info["base_value"]
         prev_buy_dict = dict()
-        for item in user_info["cargo"]:
-            prev_buy_dict[int(item[0])] = item[1]
+        if user_info["cargo"]:
+            for item in user_info["cargo"]:
+                prev_buy_dict[int(item[0])] = item[1]
 
         for date, first_ball in temp_pool.items():
             vertical_index = -1
