@@ -24,7 +24,7 @@ def get_inviting_code(username, password):
 
 
 def generate_cookie(query_dict):
-    return hashlib.md5((str(query_dict) + ":".join(str(random.randint(0, 100)) for _ in range(100))).
+    return hashlib.md5((str(query_dict) + ":".join(str(random.randint(0, 100)) for _ in range(10))).
                        encode("utf8")).hexdigest()
 
 
@@ -57,6 +57,13 @@ class DataBaseUtil(object):
                 return False, "服务器繁忙, 请稍后再试"
             else:
                 return DBUtil.get_and_reset_cookie(username, password, ip, retry)
+
+    def reset_cookie(self, r, ip):
+        cookie = generate_cookie(r)
+        query = 'UPDATE user_info SET cookie="%s", ip="%s", last_active_time=%s WHERE userid="%d"' % \
+                (cookie, extend_ip(r["ip"], ip), "now()", r["userid"])
+        self.execute_and_commit(query)
+        return True, cookie
 
     def valid_user(self, cookie, return_key=None):
         if "StockID" not in cookie:
