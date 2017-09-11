@@ -211,7 +211,7 @@ class StockMonitor(View):
             else:
                 extra_info = self.request.transport.get_extra_info('peername')
                 ip = extra_info[0] if extra_info is not None else str(None)
-                valid, cookie = DBUtil.get_and_reset_cookie(post_body["username"], post_body["password"], ip)
+                valid, cookie = DBUtil.get_and_reset_cookie(r["username"], r["password"], ip)
                 init_headers = Headers.html_headers
                 init_headers["Set-Cookie"] = "StockID=" + cookie + ";path=/;max-age=" + config["common"]["cookie_max_age"]
                 return web.Response(text=html, headers=init_headers)
