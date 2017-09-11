@@ -11,6 +11,7 @@ from ConfigureUtil import Headers, WebPageBase, ErrorReturn
 
 class StockBind(View):
     path = "/Stock/StockBind"
+
     async def get(self):
         r = DBUtil.valid_user(self.request.cookies, True)
         if not r:

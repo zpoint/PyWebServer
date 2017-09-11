@@ -6,6 +6,7 @@ from aiohttp.web import View
 from urllib.parse import quote, urlencode
 from datetime import datetime, timedelta
 
+from app.Stock.Config import config
 from app.Stock.Rules import rule
 from app.Stock.DataBase import DBUtil
 from app.Stock.Config import stock_pool
@@ -208,7 +209,12 @@ class StockMonitor(View):
             if type(html) != str:
                 return html
             else:
-                return web.Response(text=html, headers=Headers.html_headers)
+                extra_info = self.request.transport.get_extra_info('peername')
+                ip = extra_info[0] if extra_info is not None else str(None)
+                valid, cookie = DBUtil.get_and_reset_cookie(post_body["username"], post_body["password"], ip)
+                init_headers = Headers.html_headers
+                init_headers["Set-Cookie"] = "StockID=" + cookie + ";path=/;max-age=" + config["common"]["cookie_max_age"]
+                return web.Response(text=html, headers=init_headers)
 
     @staticmethod
     def update_personal_val(post_body, r):
@@ -372,8 +378,8 @@ class StockMonitor(View):
         else:
             buy_cursor = r["buy_cursor"]
 
-        body += '<tr><td>倍投</td><td><input type="text" name="stock_times", value="%s" pattern="^(\d-){1,}\d$" ' \
-                'title="如 0-0-0-1-6 为连续四次符合规则, 第4次设置为基数的1倍, 第5次设置为基数的六倍, 当前在第%d个, 为%s倍"' \
+        body += '<tr><td>倍投</td><td><input type="text" name="stock_times", value="%s" pattern="^(\d{1,}-){1,}\d{1,}$"' \
+                ' title="如 0-0-0-1-6 为连续四次符合规则, 第4次设置为基数的1倍, 第5次设置为基数的六倍, 当前在第%d个, 为%s倍"' \
                 ' /></td></tr>' % (r["stock_times"], buy_cursor + 1, str(values[buy_cursor]))
         body += '<tr><td>时段</td><td><input type="text" name="working_period", value="%s", pattern="^\d\d-\d\d$", ' \
                 'title="进行自动购买的时段, 起始小时-结束小时, 00-24为全天, 00-00为不进行购买, 08-12为早上8点至中午12点" />' \

@@ -183,6 +183,7 @@ class RefreshMgr(Thread):
         times_lst = [float(i) for i in user_info["stock_times"].split("-")]
         base_val = user_info["base_value"]
         prev_buy_dict = dict()
+        buy_step_need_forward = False
         if user_info["cargo"]:
             for item in user_info["cargo"]:
                 prev_buy_dict[int(item[0])] = item[1]
@@ -221,10 +222,14 @@ class RefreshMgr(Thread):
                     logging.warning("Incorrect buy val: %d, username: %s, keyword: %s, index: %d, date: %s" %
                                     (buy_val, user_info["username"], ball.keyword, vertical_index, str(date)))
                     logging.warning(str(times_lst) + " " + str(ball.weight))
+                    buy_step_need_forward = True
             break
 
         if buy_list:
             await self.buy_with_val(user_info, buy_list)
+            user_info["buy_cursor"] += 1
+            self.db.update_buy_step(user_info)
+        elif buy_step_need_forward:
             user_info["buy_cursor"] += 1
             self.db.update_buy_step(user_info)
         else:

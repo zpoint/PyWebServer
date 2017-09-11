@@ -8,6 +8,7 @@ main_pth = "/Stock"
 
 class StockBind(View):
     path = "/Stock/StockRegister"
+
     async def get(self):
         html = WebPageBase.head("请注册账号")
         html += """

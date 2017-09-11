@@ -1,7 +1,6 @@
 import random
 from aiohttp import web
 from aiohttp.web import View
-from urllib.parse import urlencode
 
 from app.Stock.DataBase import DBUtil
 from ConfigureUtil import Headers, ErrorReturn
@@ -9,6 +8,7 @@ from ConfigureUtil import Headers, ErrorReturn
 
 class StockVerifyCode(View):
     path = "/Stock/VerifyCode"
+
     async def get(self):
         if not DBUtil.valid_user(self.request.headers["Cookie"]):
             return ErrorReturn.invalid()

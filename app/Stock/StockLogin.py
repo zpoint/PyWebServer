@@ -40,6 +40,7 @@ async def get_code_info(host, sys_version, session=None):
         c_user, verify_value, _ = text.split("_")
     return c_user, verify_value, get_cookie_dict(resp.cookies)
 
+
 async def get_verify_code(host, c_user, cookie_dict, session=None):
     session = global_session if not session else session
     url = host + "/getVcode/.auth?" + urlencode({
@@ -53,6 +54,7 @@ async def get_verify_code(host, c_user, cookie_dict, session=None):
     async with session.get(url, headers=basic_headers) as resp:
         byte_img = await resp.read()
         return byte_img, get_cookie_dict(resp.cookies)
+
 
 async def login(host, verify_code, verify_value, username, password, cid, cname, cookie_dict, session=None):
     session = global_session if not session else session
@@ -99,6 +101,7 @@ async def login(host, verify_code, verify_value, username, password, cid, cname,
 
 class StockLogin(View):
     path = "/Stock/StockLogin"
+
     async def get(self):
         bind_usr = DBUtil.valid_user(self.request.cookies, "bind_username")
         if bind_usr is False:
