@@ -24,8 +24,9 @@ def get_inviting_code(username, password):
 
 
 def generate_cookie(query_dict):
-    return hashlib.md5((str(query_dict) + ":".join(str(random.randint(0, 100)) for _ in range(10))).
-                       encode("utf8")).hexdigest()
+    string = str(query_dict) + ":".join(str(random.randint(0, 100)) for _ in range(10))
+    md5_string = hashlib.md5(string.encode("utf8")).hexdigest()
+    return md5_string
 
 
 class DataBaseUtil(object):

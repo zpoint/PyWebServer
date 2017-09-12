@@ -15,7 +15,7 @@ from ConfigureUtil import Headers, global_session, global_loop, ErrorReturn
 
 async def get_cid_and_cname(host, session=None):
     session = global_session if not session else session
-    url = host + "/sscbz3547472f/user/login.html.auth"
+    url = host + "/sczzz365482f/user/login.html.auth"
     basic_headers = generate_headers(connection="keep-alive")
     basic_headers["Host"] = host.replace("http://", "")
     async with session.get(url, headers=basic_headers) as resp:
@@ -70,7 +70,7 @@ async def login(host, verify_code, verify_value, username, password, cid, cname,
         ("systemversion", config["remote"]["systemversion"]),
     ])
     basic_headers = generate_headers()
-    basic_headers["Referer"] = host + "/sscbz3547472f/user/login.html.auth"
+    basic_headers["Referer"] = host + "/sczzz365482f/user/login.html.auth"
     basic_headers["Host"] = host.replace("http://", "")
     basic_headers["Cookie"] = generate_cookie(cookie_dict)
     basic_headers["Origin"] = "http://pc12.x.sss33.us"
