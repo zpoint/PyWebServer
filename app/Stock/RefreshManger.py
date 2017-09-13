@@ -222,7 +222,8 @@ class RefreshMgr(Thread):
                 else:
                     logging.warning("Incorrect buy val: %d, username: %s, keyword: %s, index: %d, date: %s" %
                                     (buy_val, user_info["username"], ball.keyword, vertical_index, str(date)))
-                    logging.warning(str(times_lst) + " " + str(ball.weight))
+                    logging.warning(str(times_lst) + " " + str(ball.weight) + " buy_cursor: %d, clear_line_cursor: %d"
+                                    % (user_info["buy_cursor"], user_info["clear_line_cursor"]))
                     buy_step_need_forward = True
             break
 
