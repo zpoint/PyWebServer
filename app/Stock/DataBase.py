@@ -231,7 +231,7 @@ class DataBaseUtil(object):
                 (int(r["buy_step"]), int(r["clear_line_cursor"]), r["userid"])
         self.execute_and_commit(query)
 
-    def db_reset_clear_line_cursor(self):
+    def reset_clear_line_cursor(self):
         query = 'UPDATE user_info SET clear_line_cursor=0'
         self.execute_and_commit(query)
 

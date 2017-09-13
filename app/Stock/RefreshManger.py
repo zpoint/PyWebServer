@@ -251,7 +251,7 @@ class RefreshMgr(Thread):
                                           config["common"]["rest_end_hour"], "%Y-%m-%d %H:%M")
         if rest_begin_data < now < rest_end_data:
             sleep_seconds = (rest_end_data - now).seconds
-            self.db_reset_clear_line_cursor()
+            self.db.reset_clear_line_cursor()
             logging.info("Market closed, Going to sleep for %d seconds, is %.2f hours" %
                          (sleep_seconds, sleep_seconds / 3600.0))
             await asyncio.sleep(sleep_seconds, loop=self.loop)
