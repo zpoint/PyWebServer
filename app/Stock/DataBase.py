@@ -243,6 +243,11 @@ class DataBaseUtil(object):
         query = 'UPDATE user_info SET buy_cursor=%d WHERE userid=%d' % (int(r["buy_cursor"]), r["userid"])
         self.execute_and_commit(query)
 
+    def clear_cargo(self, r):
+        if r["cargo"]:
+            query = 'UPDATE user_info SET cargo=NULL WHERE userid=%d' % (r["userid"], )
+            self.execute_and_commit(query)
+
     def execute_and_commit(self, query):
         try:
             self.cursor.execute(query)

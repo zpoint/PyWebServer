@@ -232,9 +232,11 @@ class RefreshMgr(Thread):
             self.db.update_buy_cursor(user_info)
         elif buy_step_need_forward:
             user_info["buy_cursor"] += 1
+            self.db.clear_cargo(user_info)
             self.db.update_buy_cursor(user_info)
         else:
             user_info["buy_cursor"] = 0
+            self.db.clear_cargo(user_info)
             self.db.update_buy_cursor(user_info)
 
     async def re_login_all(self):
