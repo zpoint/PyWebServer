@@ -13,14 +13,29 @@ class Rules(object):
     ])
 
     @staticmethod
-    def set_recursive_val(paint_func, ball):
+    def count_depth(ball):
+        depth = 0
+        down = ball
+        while down:
+            depth += 1
+            down = down.down
+        return depth
+
+    def set_recursive_val(self, paint_func, ball, clear_line_cursor):
         if ball.color and ball.keyword.isdigit():
+            total_depth = self.count_depth(ball)
+            depth = 0
+            need_continue = True
             row_colored = True
             weight = 0
             current_ball = ball
-            while row_colored:
+            while need_continue:
+                depth += 1
+                if depth >= total_depth - clear_line_cursor:
+                    need_continue = False
+
+                weight += 1 if row_colored else 0
                 row_colored = False
-                weight += 1
                 next_row_ball = current_ball.down
                 if not next_row_ball:
                     break
@@ -95,7 +110,7 @@ class Rules(object):
                 for paint_func in rule_func:
                     paint_func(ball)
                     if index == 0:
-                        self.set_recursive_val(paint_func, ball)
+                        self.set_recursive_val(paint_func, ball, r["clear_line_cursor"])
             index += 1
 
     def get_rule_val(self, rule_lst):

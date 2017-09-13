@@ -196,7 +196,8 @@ class RefreshMgr(Thread):
                     break
                 if vertical_index in prev_buy_dict and prev_buy_dict[vertical_index] == ball.keyword:  # bingo
                     user_info["buy_cursor"] = 0
-                    self.db.update_buy_step(user_info)
+                    user_info["clear_line_cursor"] = rule.count_depth(ball)
+                    self.db.update_buy_step_and_clear_cursor(user_info)
             break
 
         for date, first_ball in temp_pool.items():
@@ -250,6 +251,7 @@ class RefreshMgr(Thread):
                                           config["common"]["rest_end_hour"], "%Y-%m-%d %H:%M")
         if rest_begin_data < now < rest_end_data:
             sleep_seconds = (rest_end_data - now).seconds
+            self.db_reset_clear_line_cursor()
             logging.info("Market closed, Going to sleep for %d seconds, is %.2f hours" %
                          (sleep_seconds, sleep_seconds / 3600.0))
             await asyncio.sleep(sleep_seconds, loop=self.loop)
