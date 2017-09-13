@@ -197,7 +197,7 @@ class RefreshMgr(Thread):
                 if vertical_index in prev_buy_dict and prev_buy_dict[vertical_index] == ball.keyword:  # bingo
                     user_info["buy_cursor"] = 0
                     user_info["clear_line_cursor"] = rule.count_depth(ball)
-                    self.db.update_buy_step_and_clear_cursor(user_info)
+                    self.db.update_buy_cursor_and_clear_cursor(user_info)
             break
 
         for date, first_ball in temp_pool.items():
@@ -229,13 +229,13 @@ class RefreshMgr(Thread):
         if buy_list:
             await self.buy_with_val(user_info, buy_list)
             user_info["buy_cursor"] += 1
-            self.db.update_buy_step(user_info)
+            self.db.update_buy_cursor(user_info)
         elif buy_step_need_forward:
             user_info["buy_cursor"] += 1
-            self.db.update_buy_step(user_info)
+            self.db.update_buy_cursor(user_info)
         else:
             user_info["buy_cursor"] = 0
-            self.db.update_buy_step(user_info)
+            self.db.update_buy_cursor(user_info)
 
     async def re_login_all(self):
         re_login_info = self.db.get_info_who_need_re_login()

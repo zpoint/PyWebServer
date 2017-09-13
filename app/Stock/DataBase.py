@@ -226,9 +226,13 @@ class DataBaseUtil(object):
         query = 'UPDATE user_info SET buy_step=%d WHERE userid=%d' % (int(r["buy_step"]), r["userid"])
         self.execute_and_commit(query)
 
-    def update_buy_step_and_clear_cursor(self, r):
-        query = 'UPDATE user_info SET buy_step=%d, clear_line_cursor=%d WHERE userid=%d' % \
-                (int(r["buy_step"]), int(r["clear_line_cursor"]), r["userid"])
+    def update_buy_cursor(self, r):
+        query = 'UPDATE user_info SET buy_cursor=%d WHERE userid=%d' % (int(r["buy_cursor"]), r["userid"])
+        self.execute_and_commit(query)
+
+    def update_buy_cursor_and_clear_cursor(self, r):
+        query = 'UPDATE user_info SET buy_cursor=%d, clear_line_cursor=%d WHERE userid=%d' % \
+                (int(r["buy_cursor"]), int(r["clear_line_cursor"]), r["userid"])
         self.execute_and_commit(query)
 
     def reset_clear_line_cursor(self):
