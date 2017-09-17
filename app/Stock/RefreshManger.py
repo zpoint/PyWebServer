@@ -285,6 +285,8 @@ class RefreshMgr(Thread):
                     logging.warning("No valid cookie to get latest data")
                 else:
                     tasks = list()
+                    logging.info("In the main loop, buy flag: " +
+                                 str(buy_flag));
                     if buy_flag:
                         result = await self.get_current_table(random.choice(info))
                         if result is True:
@@ -360,7 +362,8 @@ class RefreshMgr(Thread):
                     logging.info("next_refresh_data " + str(next_refresh_data[0]))
 
                 if json_obj["data"]["result"] and len(json_obj["data"]["result"]) >= 1:
-                    # print("prev_refresh_data", prev_refresh_data, "next_refresh_data", next_refresh_data)
+                    logging.info("prev_refresh_data" + str(prev_refresh_data) +
+                                 "next_refresh_data" + str(next_refresh_data))
                     if not prev_refresh_data or prev_refresh_data != next_refresh_data[0]:
                         buy_flag = True
 
