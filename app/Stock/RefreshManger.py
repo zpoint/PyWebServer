@@ -168,7 +168,7 @@ class RefreshMgr(Thread):
                     return await self.buy_with_val(user_info, buy_list, retry, current+1)
 
         logging.info("Success buying: %s, username: %s" % (param["t"], user_info["username"]))
-        self.db.update_buying_table(user_info, json_obj, buy_list)
+        self.db.update_buying_table(user_info, json_obj, buy_list, next_refresh_data[0])
         cookie_dict = get_cookie_dict(resp.cookies)
         if cookie_dict:
             self.db.update_cookie(user_info, cookie_dict)
@@ -185,6 +185,10 @@ class RefreshMgr(Thread):
         prev_buy_dict = dict()
         buy_step_need_forward = False
         if user_info["cargo"]:
+            if user_info["cargo_buying_for_date"] == next_refresh_data[0]:
+                logging.info("already buy, no need to buy")
+                return True
+
             for item in user_info["cargo"]:
                 prev_buy_dict[int(item[0])] = item[1]
 
@@ -192,7 +196,7 @@ class RefreshMgr(Thread):
             vertical_index = -1
             for ball in first_ball:
                 vertical_index += 1
-                if vertical_index >= 10:
+                if vertical_index >= 11:
                     break
                 if vertical_index in prev_buy_dict and prev_buy_dict[vertical_index] == ball.keyword:  # bingo
                     user_info["buy_cursor"] = 0
@@ -204,7 +208,7 @@ class RefreshMgr(Thread):
             vertical_index = -1
             for ball in first_ball:
                 vertical_index += 1
-                if vertical_index >= 10:
+                if vertical_index >= 11:
                     break
                 if not hasattr(ball, "weight"):  # has no any rule, so ball does not have weight when painted
                     return True
@@ -236,7 +240,6 @@ class RefreshMgr(Thread):
             self.db.clear_cargo(user_info)
             self.db.update_buy_cursor(user_info)
         else:
-            user_info["buy_cursor"] = 0
             self.db.clear_cargo(user_info)
             self.db.update_buy_cursor(user_info)
 

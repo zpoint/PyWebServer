@@ -7,6 +7,7 @@ import MySQLdb.cursors
 import _mysql_exceptions
 
 from app.Stock.Config import config
+from app.Stock.Rules import rule
 
 free_days = int(config["common"]["free_days"])
 db_config = config["mysql"]
@@ -197,7 +198,7 @@ class DataBaseUtil(object):
         self.execute_and_commit(query)
         return self.cursor.fetchone()["remote_valid"]
 
-    def update_base(self, r, new_rule_val, new_base_val, new_stock_val, new_period, new_status):
+    def update_base(self, r, new_rule_val, new_base_val, new_stock_val, new_period, new_status, stock_pool):
         if r["rules"] == new_rule_val and r["base_value"] == new_base_val and r["stock_times"] == new_stock_val and \
                         r["working_period"] == new_period and r["running_status"] == new_status:
             return
@@ -208,18 +209,23 @@ class DataBaseUtil(object):
         self.execute_and_commit(query)
         r["rules"] = new_rule_val
         r["base_value"] = new_base_val
-        r["stock_times"] = new_stock_val
         r["working_period"] = new_period
         r["running_status"] = new_status
+        if r["stock_times"] != new_stock_val:
+            r["buy_cursor"] = 0
+            for date, first_ball in stock_pool.items():
+                r["clear_line_cursor"] = rule.count_depth(first_ball)
+                break
+            self.update_buy_cursor_and_clear_cursor(r)
+        r["stock_times"] = new_stock_val
 
-    def update_buying_table(self, r, json_obj, cargo):
+    def update_buying_table(self, r, json_obj, cargo, next_refresh_data_str):
         date_now_str = datetime.datetime.now().strftime("%Y-%m-%d")
         for i in json_obj["data"]["user"]["new_orders"]:
             i[-1] = date_now_str + " " + i[-1]
 
-        query = "UPDATE user_info SET buy_table='%s' WHERE userid=%d" % (json.dumps(json_obj), r["userid"])
-        self.execute(query)
-        query = "UPDATE user_info SET cargo='%s' WHERE userid=%d" % (json.dumps(cargo), r["userid"])
+        query = "UPDATE user_info SET buy_table='%s', cargo='%s', cargo_buying_for_date='%s' WHERE userid=%d" % \
+                (json.dumps(json_obj), json.dumps(cargo), next_refresh_data_str, r["userid"])
         self.execute_and_commit(query)
 
     def update_buy_step(self, r):

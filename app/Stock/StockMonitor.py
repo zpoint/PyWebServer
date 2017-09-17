@@ -139,7 +139,6 @@ class StockMonitor(View):
         else:
             next_seconds = random.randint(15, 30)
 
-
         body = """
             <table align="center">
             <tr><td><span id="time">%d</span> 秒后自动刷新</tr></td>
@@ -167,8 +166,10 @@ class StockMonitor(View):
             return ErrorReturn.invalid()
         if not r["bind_username"]:
             return ErrorReturn.invalid("您尚未绑定账号,请绑定后进行操作", main_path="/Stock/StockBind")
-
-        html = await self.get_content_html(r)
+        try:
+            html = await self.get_content_html(r)
+        except IndexError:
+            return ErrorReturn.invalid("对方服务器超时, 请稍后重试", main_path=self.path)
         if type(html) != str:
             return html
         else:
@@ -253,7 +254,7 @@ class StockMonitor(View):
         else:
             return False, "非法选项"
 
-        DBUtil.update_base(r, new_rule_val, new_base_val, new_stock_val, new_period, new_status)
+        DBUtil.update_base(r, new_rule_val, new_base_val, new_stock_val, new_period, new_status, stock_pool)
         return True, "success"
 
     async def get_middle_content(self, r):
