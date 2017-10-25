@@ -304,7 +304,7 @@ class StockMonitor(View):
                         self.need_refresh_fast = True
                         break
                     index += 1
-                    if index >= 11:
+                    if index >= 10:
                         break
                 break
         else:

@@ -1,3 +1,4 @@
+import logging
 from collections import OrderedDict
 
 
@@ -29,12 +30,20 @@ class Rules(object):
             row_colored = True
             weight = 0
             current_ball = ball
+            delta_depth = total_depth - clear_line_cursor
+            if delta_depth < 0:
+                logging.error("delta_depth < 0, total_depth: %d, clear_line_cursor: %d" % (total_depth, clear_line_cursor))
+            else:
+                logging.info("delta_depth: %d " % (delta_depth, ))
             while need_continue:
                 depth += 1
-                if depth >= total_depth - clear_line_cursor:
+                print("depth: ", depth, "delta_depth", delta_depth)
+                if depth >= delta_depth:
                     need_continue = False
 
-                weight += 1 if row_colored else 0
+                if row_colored:
+                    weight += 1
+
                 row_colored = False
                 next_row_ball = current_ball.down
                 if not next_row_ball:
@@ -96,6 +105,7 @@ class Rules(object):
         return r["rules"] & val
 
     def paint(self, r, stock_pool):
+        print("paint")
         rule_func = list()
         for rule_name, values in self.all_rules.items():
             if self.has_rule(r, rule_name):
@@ -104,14 +114,16 @@ class Rules(object):
         if not rule_func:
             return stock_pool
 
-        index = 0
         for date, first_ball in stock_pool.items():
             for ball in first_ball:
                 for paint_func in rule_func:
                     paint_func(ball)
-                    if index == 0:
-                        self.set_recursive_val(paint_func, ball, r["clear_line_cursor"])
-            index += 1
+
+        for date, first_ball in stock_pool.items():
+            for ball in first_ball:
+                for paint_func in rule_func:
+                    self.set_recursive_val(paint_func, ball, r["clear_line_cursor"])
+                return stock_pool
 
     def get_rule_val(self, rule_lst):
         val = 0

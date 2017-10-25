@@ -45,7 +45,7 @@ class RefreshMgr(Thread):
         if isinstance(user_info["bind_cookie"], str):
             user_info["bind_cookie"] = json.loads(user_info["bind_cookie"])
 
-        url = user_info["prefer_host"] + "/sczzz365482f_10355/klc/order/list/?&_=%s__autorefresh" % \
+        url = user_info["prefer_host"] + "/sczzz365482f_17219/klc/order/list/?&_=%s__autorefresh" % \
                                          (int(time.time() * 1000), )
         data = "action=ajax&play=bothSides&ball=&cat=13"
         headers = generate_headers()
@@ -124,7 +124,7 @@ class RefreshMgr(Thread):
             return False
 
     async def buy_with_val(self, user_info, buy_list, retry=3, current=1):
-        url = user_info["prefer_host"] + "/sczzz365482f_10355/pk/order/leftInfo/?post_submit=&=&_=%d__ajax" % \
+        url = user_info["prefer_host"] + "/sczzz365482f_17219/pk/order/leftInfo/?post_submit=&=&_=%d__ajax" % \
                                          (int(time.time() * 1000), )
         headers = generate_headers()
         headers["Referer"] = user_info["prefer_host"]
@@ -195,8 +195,9 @@ class RefreshMgr(Thread):
         for date, first_ball in temp_pool.items():
             vertical_index = -1
             for ball in first_ball:
+                logging.info("ball.weight: %s, ball.keyword: %s" % (ball.weight, ball.keyword))
                 vertical_index += 1
-                if vertical_index >= 11:
+                if vertical_index >= 10:
                     break
                 if vertical_index in prev_buy_dict and prev_buy_dict[vertical_index] == ball.keyword:  # bingo
                     user_info["buy_cursor"] = 0
@@ -205,10 +206,11 @@ class RefreshMgr(Thread):
             break
 
         for date, first_ball in temp_pool.items():
+            logging.info("date: " + str(date) + " first_ball: " + str(first_ball))
             vertical_index = -1
             for ball in first_ball:
                 vertical_index += 1
-                if vertical_index >= 11:
+                if vertical_index >= 10:
                     break
                 if not hasattr(ball, "weight"):  # has no any rule, so ball does not have weight when painted
                     return True
@@ -327,7 +329,7 @@ class RefreshMgr(Thread):
         if isinstance(user_info["bind_cookie"], str):
             user_info["bind_cookie"] = json.loads(user_info["bind_cookie"])
 
-        url = user_info["prefer_host"] + "/sczzz365482f_10355/pk/result/index"
+        url = user_info["prefer_host"] + "/sczzz365482f_17219/pk/result/index"
         post_body = "date=" + now.strftime("%Y-%m-%d")
         headers = generate_headers()
         headers["Host"] = user_info["prefer_host"].replace("http://", "")
@@ -386,7 +388,7 @@ class RefreshMgr(Thread):
 
     async def get_current_table(self, user_info):
         host = user_info["prefer_host"]
-        url = host + "/sczzz365482f_10355/pk/order/list?&_=%d__ajax" % (int(time.time() * 1000), )
+        url = host + "/sczzz365482f_17219/pk/order/list?&_=%d__ajax" % (int(time.time() * 1000), )
         body1 = "play=ballNO15"
         body2 = "play=ballNO60"
         headers = generate_headers()
