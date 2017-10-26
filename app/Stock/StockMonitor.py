@@ -129,15 +129,15 @@ class StockMonitor(View):
     def refresh_script(self):
         if next_refresh_data:
             if self.need_refresh_fast:
-                next_seconds = random.randint(15, 30)
+                next_seconds = random.randint(50, 60)
             else:
                 now = datetime.now()
                 if now > next_refresh_data[0]:
-                    next_seconds = random.randint(15, 30)
+                    next_seconds = random.randint(50, 60)
                 else:
-                    next_seconds = (next_refresh_data[0] - now).seconds + random.randint(15, 30)
+                    next_seconds = (next_refresh_data[0] - now).seconds + random.randint(50, 60)
         else:
-            next_seconds = random.randint(15, 30)
+            next_seconds = random.randint(50, 60)
 
         body = """
             <table align="center">

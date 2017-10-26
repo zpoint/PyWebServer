@@ -37,7 +37,7 @@ class Rules(object):
                 logging.info("delta_depth: %d " % (delta_depth, ))
             while need_continue:
                 depth += 1
-                print("depth: ", depth, "delta_depth", delta_depth)
+                # print("ball", ball.keyword, "depth: ", depth, "delta_depth", delta_depth)
                 if depth >= delta_depth:
                     need_continue = False
 
@@ -65,6 +65,7 @@ class Rules(object):
             ball.weight = weight - 1 if weight > 0 else weight
         else:
             ball.weight = 0
+        print("ball.keyword", ball.keyword, "ball.weight", ball.weight, "delta_depth", self.count_depth(ball) - clear_line_cursor)
 
     def down(self, ball, return_next=False):
         if return_next:
@@ -123,7 +124,9 @@ class Rules(object):
             for ball in first_ball:
                 for paint_func in rule_func:
                     self.set_recursive_val(paint_func, ball, r["clear_line_cursor"])
-                return stock_pool
+            # only need for first line
+            break
+        return stock_pool
 
     def get_rule_val(self, rule_lst):
         val = 0
@@ -131,5 +134,6 @@ class Rules(object):
             if name in self.all_rules:
                 val |= self.all_rules[name][0]
         return val
+
 
 rule = Rules()

@@ -79,4 +79,5 @@ class VerifyUtilObject(object):
         with open(path, "wb") as f:
             f.write(img_byte)
 
+
 verifyUtil = VerifyUtilObject()

@@ -81,7 +81,7 @@ class RefreshMgr(Thread):
             if key not in post_body:
                 logging.error("Key: %s not in body, username: %s" % (key, post_body["username"]))
                 return False
-
+        print("going to login")
         success, cookie_dict = await login(r["prefer_host"], post_body["verify_code"], post_body["verify_value"],
                                            post_body["username"], post_body["password"], post_body["cid"],
                                            post_body["cname"], r["bind_cookie"], session=self.session)
@@ -93,12 +93,13 @@ class RefreshMgr(Thread):
             self.db.set_cookie_valid(r)
             return True
 
-    async def re_login_person(self, user_info, retry=5, curr_count=1):
+    async def re_login_person(self, user_info, retry=3, curr_count=1):
         await asyncio.sleep(random.randint(0, 3), loop=self.loop)  # avoid DDOS
         try:
             img_byte = await StockLogin.get_img_byte(user_info, loop=self.loop, session=self.session)
         except (ValueError, IndexError):
             if curr_count <= retry:
+                logging.info("img byte error, retry")
                 return await self.re_login_person(user_info, retry, curr_count + 1)
             else:
                 # verify code error
@@ -195,11 +196,12 @@ class RefreshMgr(Thread):
         for date, first_ball in temp_pool.items():
             vertical_index = -1
             for ball in first_ball:
-                logging.info("ball.weight: %s, ball.keyword: %s" % (ball.weight, ball.keyword))
+                logging.info("ball.weight: %s, ball.keyword: %s" % (ball.weight if hasattr(ball, "weight") else str(None), ball.keyword))
                 vertical_index += 1
                 if vertical_index >= 10:
                     break
                 if vertical_index in prev_buy_dict and prev_buy_dict[vertical_index] == ball.keyword:  # bingo
+                    logging.info("buy bingo")
                     user_info["buy_cursor"] = 0
                     user_info["clear_line_cursor"] = rule.count_depth(ball)
                     self.db.update_buy_cursor_and_clear_cursor(user_info)
@@ -272,7 +274,9 @@ class RefreshMgr(Thread):
                 await self.sleep_when_market_closed()
                 info = self.db.get_info_whose_cookie_is_valid()
                 if not info:
+                    print("relogin")
                     await self.re_login_all()
+                    print("relogin done")
                     info = self.db.get_info_whose_cookie_is_valid()
                     if not info:
                         logging.warning("After re login, still no valid cookie to get latest data")
@@ -290,11 +294,11 @@ class RefreshMgr(Thread):
                     logging.warning("No valid cookie to get latest data")
                 else:
                     tasks = list()
-                    logging.info("In the main loop, buy flag: " +
-                                 str(buy_flag));
+                    logging.info("In the main loop, buy flag: " + str(buy_flag))
                     if buy_flag:
                         result = await self.get_current_table(random.choice(info))
                         if result is True:
+                            logging.info("table get, going to buy")
                             for each in info:
                                 tasks.append(self.loop.create_task(self.buy_person(each)))
                             buy_flag = False

@@ -73,16 +73,17 @@ async def login(host, verify_code, verify_value, username, password, cid, cname,
     basic_headers["Referer"] = host + "/sczzz365482f/user/login.html.auth"
     basic_headers["Host"] = host.replace("http://", "")
     basic_headers["Cookie"] = generate_cookie(cookie_dict)
-    basic_headers["Origin"] = "http://pc12.x.sss33.us"
     basic_headers["Content-Type"] = "application/x-www-form-urlencoded;"
     async with session.post(url, data=urlencode(param), headers=basic_headers) as resp:
         html = await resp.text()
 
         if "AC" not in resp.cookies:
+            print("Error", html)
             return False, html if "Server Error" not in html else "对方服务器异常, 请稍后重试"
 
         real_login_host = re.search("http://.+", html)
         if not real_login_host:
+            print("Error2", html)
             return False, "内部匹配错误"
 
         cookie_dict_a = get_cookie_dict(resp.cookies)
@@ -121,6 +122,7 @@ class StockLogin(View):
         if old_user:
             r["bind_cookie"] = None
             r["bind_param"] = None
+        print("awaiting")
         values_a, values_b = await asyncio.gather(get_cid_and_cname(r["prefer_host"], session),
                                                   get_code_info(r["prefer_host"], config["remote"]["systemversion"],
                                                                 session),
