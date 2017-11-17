@@ -45,7 +45,7 @@ class RefreshMgr(Thread):
         if isinstance(user_info["bind_cookie"], str):
             user_info["bind_cookie"] = json.loads(user_info["bind_cookie"])
 
-        url = user_info["prefer_host"] + "/sczzz365482f_17219/klc/order/list/?&_=%s__autorefresh" % \
+        url = user_info["prefer_host"] + "/sczzz3654821f_17219/klc/order/list/?&_=%s__autorefresh" % \
                                          (int(time.time() * 1000), )
         data = "action=ajax&play=bothSides&ball=&cat=13"
         headers = generate_headers()
@@ -125,7 +125,8 @@ class RefreshMgr(Thread):
             return False
 
     async def buy_with_val(self, user_info, buy_list, retry=3, current=1):
-        url = user_info["prefer_host"] + "/sczzz365482f_17219/pk/order/leftInfo/?post_submit=&=&_=%d__ajax" % \
+        logging.info("In buy_with_val, id: %s, buy_list: %s" % (user_info["userid"], str(buy_list)))
+        url = user_info["prefer_host"] + "/sczzz3654821f_17219/pk/order/leftInfo/?post_submit=&=&_=%d__ajax" % \
                                          (int(time.time() * 1000), )
         headers = generate_headers()
         headers["Referer"] = user_info["prefer_host"]
@@ -160,6 +161,8 @@ class RefreshMgr(Thread):
                 if json_obj["data"] and "user" in json_obj["data"] and "version_number" in json_obj["data"]["user"]:
                     user_info["buy_step"] = json_obj["data"]["user"]["version_number"]
                     self.db.update_buy_step(user_info)
+                else:
+                    logging.error(text)
 
                 if current > retry:
                     logging.error("User: %s fail buying with val: %s" % (user_info["username"], param["t"]))
@@ -333,7 +336,7 @@ class RefreshMgr(Thread):
         if isinstance(user_info["bind_cookie"], str):
             user_info["bind_cookie"] = json.loads(user_info["bind_cookie"])
 
-        url = user_info["prefer_host"] + "/sczzz365482f_17219/pk/result/index"
+        url = user_info["prefer_host"] + "/sczzz3654821f_17219/pk/result/index"
         post_body = "date=" + now.strftime("%Y-%m-%d")
         headers = generate_headers()
         headers["Host"] = user_info["prefer_host"].replace("http://", "")
@@ -392,7 +395,7 @@ class RefreshMgr(Thread):
 
     async def get_current_table(self, user_info):
         host = user_info["prefer_host"]
-        url = host + "/sczzz365482f_17219/pk/order/list?&_=%d__ajax" % (int(time.time() * 1000), )
+        url = host + "/sczzz3654821f_17219/pk/order/list?&_=%d__ajax" % (int(time.time() * 1000), )
         body1 = "play=ballNO15"
         body2 = "play=ballNO60"
         headers = generate_headers()
